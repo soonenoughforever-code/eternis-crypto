@@ -1,6 +1,6 @@
 {
   "name": "eternis-crypto",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Audited cryptographic primitives for Eternis. AES-256-GCM wrapper over the Web Crypto API. Pre-release.",
   "type": "module",
   "main": "./dist/index.js",
