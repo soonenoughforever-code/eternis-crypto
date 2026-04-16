@@ -80,7 +80,7 @@ describe('encryptChunk / decryptChunk — authentication failures', () => {
     const key = await generateKey();
     const ct = await encryptChunk(key, enc.encode('important message'), new Uint8Array(0));
     const tamperedCiphertext = new Uint8Array(ct.ciphertext);
-    tamperedCiphertext[0] ^= 0x01;
+    tamperedCiphertext[0] = (tamperedCiphertext[0] ?? 0) ^ 0x01;
     const tampered = { iv: ct.iv, ciphertext: tamperedCiphertext, tag: ct.tag };
     await expect(decryptChunk(key, tampered, new Uint8Array(0))).rejects.toThrow(AuthenticationError);
   });
@@ -89,7 +89,7 @@ describe('encryptChunk / decryptChunk — authentication failures', () => {
     const key = await generateKey();
     const ct = await encryptChunk(key, enc.encode('important message'), new Uint8Array(0));
     const tamperedTag = new Uint8Array(ct.tag);
-    tamperedTag[0] ^= 0x01;
+    tamperedTag[0] = (tamperedTag[0] ?? 0) ^ 0x01;
     const tampered = { iv: ct.iv, ciphertext: ct.ciphertext, tag: tamperedTag };
     await expect(decryptChunk(key, tampered, new Uint8Array(0))).rejects.toThrow(AuthenticationError);
   });
@@ -98,7 +98,7 @@ describe('encryptChunk / decryptChunk — authentication failures', () => {
     const key = await generateKey();
     const ct = await encryptChunk(key, enc.encode('important message'), new Uint8Array(0));
     const tamperedIv = new Uint8Array(ct.iv);
-    tamperedIv[0] ^= 0x01;
+    tamperedIv[0] = (tamperedIv[0] ?? 0) ^ 0x01;
     const tampered = { iv: tamperedIv, ciphertext: ct.ciphertext, tag: ct.tag };
     await expect(decryptChunk(key, tampered, new Uint8Array(0))).rejects.toThrow(AuthenticationError);
   });
