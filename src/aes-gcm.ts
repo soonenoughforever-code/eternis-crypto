@@ -1,11 +1,39 @@
 import type { Ciphertext } from './types.js';
 import { KeyHandle, _internals } from './keys.js';
-import { AuthenticationError } from './errors.js';
+import { AuthenticationError, InvalidInputError } from './errors.js';
 import { randomBytes } from './internal/random.js';
 
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 const TAG_BITS = 128;
+const MAX_PLAINTEXT_BYTES = 68_719_476_704; // 2^36 - 32 per NIST SP 800-38D
+const MAX_AAD_BYTES = 1_048_576;            // 1 MiB (defensible operational cap)
+
+function validateEncryptInputs(plaintext: Uint8Array, aad: Uint8Array): void {
+  if (plaintext.length === 0) {
+    throw new InvalidInputError(
+      'plaintext must be non-empty (AAD-only authentication is a distinct primitive not exposed here)',
+    );
+  }
+  if (plaintext.length > MAX_PLAINTEXT_BYTES) {
+    throw new InvalidInputError(`plaintext exceeds maximum of ${String(MAX_PLAINTEXT_BYTES)} bytes`);
+  }
+  if (aad.length > MAX_AAD_BYTES) {
+    throw new InvalidInputError(`associatedData exceeds maximum of ${String(MAX_AAD_BYTES)} bytes`);
+  }
+}
+
+function validateDecryptInputs(ct: Ciphertext, aad: Uint8Array): void {
+  if (ct.iv.length !== IV_BYTES) {
+    throw new InvalidInputError(`iv must be exactly ${String(IV_BYTES)} bytes, got ${String(ct.iv.length)}`);
+  }
+  if (ct.tag.length !== TAG_BYTES) {
+    throw new InvalidInputError(`tag must be exactly ${String(TAG_BYTES)} bytes, got ${String(ct.tag.length)}`);
+  }
+  if (aad.length > MAX_AAD_BYTES) {
+    throw new InvalidInputError(`associatedData exceeds maximum of ${String(MAX_AAD_BYTES)} bytes`);
+  }
+}
 
 /**
  * Encrypt one chunk with AES-256-GCM.
@@ -19,6 +47,7 @@ export async function encryptChunk(
   plaintext: Uint8Array,
   associatedData: Uint8Array,
 ): Promise<Ciphertext> {
+  validateEncryptInputs(plaintext, associatedData);  // validate FIRST — don't burn a counter slot on bad input
   const inner = _internals(key);
   inner.counter.increment(); // throws KeyExhaustedError at ceiling
 
@@ -55,6 +84,7 @@ export async function decryptChunk(
   ct: Ciphertext,
   associatedData: Uint8Array,
 ): Promise<Uint8Array> {
+  validateDecryptInputs(ct, associatedData);
   const inner = _internals(key);
 
   const combined = new Uint8Array(ct.ciphertext.length + ct.tag.length);
