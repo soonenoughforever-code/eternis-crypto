@@ -12,6 +12,10 @@
 export interface GcmVector {
   keyHex: string;
   ivHex: string;
+  /** IV length in bits as declared in the group header (e.g. 96). */
+  ivLenBits: number;
+  /** Tag length in bits as declared in the group header (e.g. 128). */
+  tagLenBits: number;
   ptHex: string;
   aadHex: string;
   ctHex: string;
@@ -25,12 +29,16 @@ export function parseGcmRsp(contents: string): GcmVector[] {
   const records: GcmVector[] = [];
   let current: Partial<GcmVector> = {};
   let fail = false;
+  let currentIvLenBits = 96;   // updated when we see [IVlen = N]
+  let currentTagLenBits = 128; // updated when we see [Taglen = N]
 
   const flush = (): void => {
     if (current.keyHex !== undefined && current.ivHex !== undefined && current.tagHex !== undefined) {
       records.push({
         keyHex: current.keyHex,
         ivHex: current.ivHex,
+        ivLenBits: currentIvLenBits,
+        tagLenBits: currentTagLenBits,
         ptHex: current.ptHex ?? '',
         aadHex: current.aadHex ?? '',
         ctHex: current.ctHex ?? '',
@@ -48,7 +56,22 @@ export function parseGcmRsp(contents: string): GcmVector[] {
       flush();
       continue;
     }
-    if (line.startsWith('#') || line.startsWith('[')) continue;
+    if (line.startsWith('#')) continue;
+    if (line.startsWith('[')) {
+      // Parse group headers like [IVlen = 96]
+      const inner = line.slice(1, line.length - 1);
+      const eqIdx = inner.indexOf('=');
+      if (eqIdx >= 0) {
+        const hName = inner.slice(0, eqIdx).trim();
+        const hVal = inner.slice(eqIdx + 1).trim();
+        if (hName === 'IVlen') {
+          currentIvLenBits = parseInt(hVal, 10);
+        } else if (hName === 'Taglen') {
+          currentTagLenBits = parseInt(hVal, 10);
+        }
+      }
+      continue;
+    }
     if (line === 'FAIL') {
       fail = true;
       continue;

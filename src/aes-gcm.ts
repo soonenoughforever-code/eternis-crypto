@@ -110,3 +110,45 @@ export async function decryptChunk(
     );
   }
 }
+
+/**
+ * Test-only: encrypt with a caller-supplied IV. Used exclusively for NIST CAVP
+ * vector verification where the test expects a specific IV. NEVER exposed from
+ * src/index.ts and must NEVER be called by production code.
+ *
+ * Skips:
+ *   - the "IV is always internal" rule (that's the whole point of this function)
+ *   - the empty-plaintext rejection (NIST has PTlen=0 vectors)
+ *   - the invocation counter (vectors are not real-world encryptions)
+ *
+ * Still enforces: IV length == 12, AAD cap, plaintext cap.
+ */
+export async function _encryptChunkWithIV(
+  key: KeyHandle,
+  plaintext: Uint8Array,
+  associatedData: Uint8Array,
+  iv: Uint8Array,
+): Promise<Ciphertext> {
+  if (iv.length !== IV_BYTES) {
+    throw new InvalidInputError(`iv must be exactly ${String(IV_BYTES)} bytes, got ${String(iv.length)}`);
+  }
+  if (plaintext.length > MAX_PLAINTEXT_BYTES) {
+    throw new InvalidInputError(`plaintext exceeds maximum of ${String(MAX_PLAINTEXT_BYTES)} bytes`);
+  }
+  if (associatedData.length > MAX_AAD_BYTES) {
+    throw new InvalidInputError(`associatedData exceeds maximum of ${String(MAX_AAD_BYTES)} bytes`);
+  }
+
+  const inner = _internals(key);
+
+  const combined = new Uint8Array(
+    await globalThis.crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer>, additionalData: associatedData as Uint8Array<ArrayBuffer>, tagLength: TAG_BITS },
+      inner.cryptoKey,
+      plaintext as Uint8Array<ArrayBuffer>,
+    ),
+  );
+  const ciphertext = combined.slice(0, combined.length - TAG_BYTES);
+  const tag = combined.slice(combined.length - TAG_BYTES);
+  return { iv, ciphertext, tag };
+}
