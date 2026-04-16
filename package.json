@@ -1,0 +1,40 @@
+{
+  "name": "eternis-crypto",
+  "version": "0.0.1",
+  "description": "Audited cryptographic primitives for Eternis. AES-256-GCM wrapper over the Web Crypto API. Pre-release.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "LICENSE", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test --ext .ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "author": "Guillermo Rivacoba",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soonenoughforever-code/eternis-crypto.git"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
