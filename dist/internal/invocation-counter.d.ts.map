@@ -1,0 +1,1 @@
+{"version":3,"file":"invocation-counter.d.ts","sourceRoot":"","sources":["../../src/internal/invocation-counter.ts"],"names":[],"mappings":"AAEA;;;;;;;GAOG;AACH,qBAAa,iBAAiB;;gBAIhB,GAAG,EAAE,MAAM;IAOvB,IAAI,KAAK,IAAI,MAAM,CAElB;IAED,IAAI,GAAG,IAAI,MAAM,CAEhB;IAED,kEAAkE;IAClE,SAAS,IAAI,IAAI;IASjB,+EAA+E;IAC/E,mBAAmB,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;CAMzC"}
