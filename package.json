@@ -17,6 +17,7 @@
     "README.md"
   ],
   "scripts": {
+    "prepare": "tsc -p tsconfig.build.json",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -32,8 +33,7 @@
     "type": "git",
     "url": "git+https://github.com/soonenoughforever-code/eternis-crypto.git"
   },
-  "private": true,
-  "devDependencies": {
+    "devDependencies": {
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
