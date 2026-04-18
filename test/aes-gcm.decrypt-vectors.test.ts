@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decryptChunk } from '../src/aes-gcm.js';
-import { _importKeyForTesting } from '../src/keys.js';
+import { _importRawKey } from '../src/keys.js';
 import { AuthenticationError } from '../src/errors.js';
 import { parseGcmRsp, hexToBytes, bytesToHex, type GcmVector } from './helpers/parse-rsp.js';
 
@@ -37,7 +37,7 @@ describe('NIST CAVP AES-256 GCM decrypt vectors', () => {
       const ct = hexToBytes(v.ctHex);
       const aad = hexToBytes(v.aadHex);
       const tag = hexToBytes(v.tagHex);
-      const key = await _importKeyForTesting(keyBytes);
+      const key = await _importRawKey(keyBytes);
       const ciphertext = { iv, ciphertext: ct, tag };
 
       if (v.expectedFail) {

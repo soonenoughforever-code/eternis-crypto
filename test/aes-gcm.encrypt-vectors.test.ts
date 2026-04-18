@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { _encryptChunkWithIV } from '../src/aes-gcm.js';
-import { _importKeyForTesting } from '../src/keys.js';
+import { _importRawKey } from '../src/keys.js';
 import { parseGcmRsp, hexToBytes, bytesToHex, type GcmVector } from './helpers/parse-rsp.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,7 +39,7 @@ describe('NIST CAVP AES-256 GCM encrypt vectors', () => {
       const iv = hexToBytes(v.ivHex);
       const pt = hexToBytes(v.ptHex);
       const aad = hexToBytes(v.aadHex);
-      const key = await _importKeyForTesting(keyBytes);
+      const key = await _importRawKey(keyBytes);
       const result = await _encryptChunkWithIV(key, pt, aad, iv);
       const gotCt = bytesToHex(result.ciphertext);
       const gotTag = bytesToHex(result.tag);

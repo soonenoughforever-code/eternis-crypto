@@ -71,11 +71,12 @@ export async function generateKey(): Promise<KeyHandle> {
 }
 
 /**
- * Test-only: import a raw 32-byte AES key for use against NIST CAVP
- * test vectors. Not re-exported from src/index.ts. Production code
- * must never call this.
+ * Internal: import a raw 32-byte AES key into a KeyHandle.
+ * Used by the preservation pipeline (to import a generated DEK) and
+ * by tests (to import NIST CAVP test vectors). Not re-exported from
+ * src/index.ts — callers must be internal to the library.
  */
-export async function _importKeyForTesting(rawKey: Uint8Array): Promise<KeyHandle> {
+export async function _importRawKey(rawKey: Uint8Array): Promise<KeyHandle> {
   if (rawKey.length !== 32) {
     throw new Error(`AES-256 key must be exactly 32 bytes, got ${String(rawKey.length)}`);
   }
