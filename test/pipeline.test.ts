@@ -3,6 +3,7 @@ import { preserve, recover } from '../src/pipeline.js';
 import { generateSigningKeyPair } from '../src/sig/ml-dsa.js';
 import { HYBRID_X25519_MLKEM768 } from '../src/kem/hybrid-kem.js';
 import type { PreservationPackage } from '../src/types.js';
+import { InvalidInputError } from '../src/errors.js';
 
 async function generateCustodianKeyPairs(count: number) {
   const pairs = [];
@@ -214,6 +215,107 @@ describe('tampering detection', () => {
 
     await expect(
       recover(tamperedPkg, custodianPrivateKeys, sigKp.publicKey),
+    ).rejects.toThrow();
+  });
+});
+
+describe('input validation', () => {
+  it('preserve rejects empty data', async () => {
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+
+    await expect(
+      preserve(new Uint8Array(0), custodianPublicKeys, sigKp.secretKey, { threshold: 2 }),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('preserve rejects fewer custodian keys than threshold', async () => {
+    const data = new TextEncoder().encode('test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(2);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+
+    await expect(
+      preserve(data, custodianPublicKeys, sigKp.secretKey, { threshold: 3 }),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('preserve rejects invalid signing key', async () => {
+    const data = new TextEncoder().encode('test');
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+
+    await expect(
+      preserve(data, custodianPublicKeys, new Uint8Array(32), { threshold: 2 }),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('recover rejects fewer keys than threshold', async () => {
+    const data = new TextEncoder().encode('test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+    const pkg = await preserve(data, custodianPublicKeys, sigKp.secretKey, {
+      threshold: 2,
+    });
+
+    await expect(
+      recover(pkg, [{ index: 0, privateKey: custodians[0]!.privateKey }], sigKp.publicKey),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('recover rejects invalid shard index', async () => {
+    const data = new TextEncoder().encode('test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+    const pkg = await preserve(data, custodianPublicKeys, sigKp.secretKey, {
+      threshold: 2,
+    });
+
+    await expect(
+      recover(pkg, [
+        { index: 0, privateKey: custodians[0]!.privateKey },
+        { index: 99, privateKey: custodians[1]!.privateKey },
+      ], sigKp.publicKey),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('recover fails with wrong custodian key', async () => {
+    const data = new TextEncoder().encode('wrong key test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+    const pkg = await preserve(data, custodianPublicKeys, sigKp.secretKey, {
+      threshold: 2,
+    });
+
+    const wrongCustodian = await HYBRID_X25519_MLKEM768.generateKeyPair();
+
+    await expect(
+      recover(pkg, [
+        { index: 0, privateKey: wrongCustodian.privateKey },
+        { index: 1, privateKey: custodians[1]!.privateKey },
+      ], sigKp.publicKey),
+    ).rejects.toThrow();
+  });
+
+  it('recover fails with wrong owner verify key', async () => {
+    const data = new TextEncoder().encode('wrong verify key');
+    const sigKp = generateSigningKeyPair();
+    const wrongSigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const custodianPublicKeys = custodians.map((c) => c.publicKey);
+    const pkg = await preserve(data, custodianPublicKeys, sigKp.secretKey, {
+      threshold: 2,
+    });
+
+    await expect(
+      recover(pkg, [
+        { index: 0, privateKey: custodians[0]!.privateKey },
+        { index: 1, privateKey: custodians[1]!.privateKey },
+      ], wrongSigKp.publicKey),
     ).rejects.toThrow();
   });
 });

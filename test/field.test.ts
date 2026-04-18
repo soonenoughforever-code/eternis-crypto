@@ -110,6 +110,10 @@ describe('pow', () => {
   it('pow(a, 1) === a mod P', () => {
     expect(pow(42n, 1n)).toBe(42n);
   });
+
+  it('Fermat witness: pow(a, P - 1) === 1 for a != 0', () => {
+    expect(pow(7n, P - 1n)).toBe(1n);
+  });
 });
 
 describe('bytesToBigInt / bigIntToBytes', () => {

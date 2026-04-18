@@ -4,6 +4,8 @@ import {
   AuthenticationError,
   KeyExhaustedError,
   InvalidInputError,
+  DecapsulationError,
+  KeyWrappingError,
 } from '../src/errors.js';
 
 describe('errors', () => {
@@ -40,5 +42,25 @@ describe('errors', () => {
     const cause = new Error('inner');
     const e = new AuthenticationError('outer', { cause });
     expect(e.cause).toBe(cause);
+  });
+});
+
+describe('DecapsulationError', () => {
+  it('extends EternisCryptoError', () => {
+    const err = new DecapsulationError('test');
+    expect(err).toBeInstanceOf(EternisCryptoError);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('DecapsulationError');
+    expect(err.message).toBe('test');
+  });
+});
+
+describe('KeyWrappingError', () => {
+  it('extends EternisCryptoError', () => {
+    const err = new KeyWrappingError('test');
+    expect(err).toBeInstanceOf(EternisCryptoError);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('KeyWrappingError');
+    expect(err.message).toBe('test');
   });
 });
