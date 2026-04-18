@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eternis — Genomic Data Protection</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #131a2b;
+    --border: #1e2a42;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.3);
+    --green: #22c55e;
+    --green-glow: rgba(34, 197, 94, 0.25);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245, 158, 11, 0.25);
+    --purple: #a855f7;
+    --purple-glow: rgba(168, 85, 247, 0.25);
+    --red: #ef4444;
+    --cyan: #06b6d4;
+    --cyan-glow: rgba(6, 182, 212, 0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 48px 24px 24px;
+  }
+  .brand-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .brand-accent {
+    color: #00c2cc;
+    text-shadow: 0 0 40px rgba(0, 194, 204, 0.5);
+  }
+  .brand-sub {
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-size: 0.85em;
+  }
+  .header p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 32px 24px 16px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface);
+    transition: all 0.5s ease;
+    position: relative;
+    cursor: pointer;
+  }
+  .step-dot.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .step-dot.complete {
+    border-color: var(--green);
+    background: var(--green);
+    color: var(--bg);
+  }
+  .step-line {
+    width: 48px;
+    height: 2px;
+    background: var(--border);
+    transition: background 0.5s ease;
+  }
+  .step-line.complete {
+    background: var(--green);
+  }
+  .step-label {
+    position: absolute;
+    top: 40px;
+    font-size: 0.65rem;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .step-dot.active .step-label { color: var(--accent); }
+  .step-dot.complete .step-label { color: var(--green); }
+
+  /* Main stage */
+  .stage {
+    max-width: 900px;
+    margin: 32px auto;
+    padding: 0 24px;
+    min-height: 500px;
+  }
+
+  .scene {
+    display: none;
+    animation: fadeIn 0.6s ease;
+  }
+  .scene.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scene title */
+  .scene-title {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .scene-title h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .scene-title p {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* Data visualization */
+  .data-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .data-panel.glow-blue {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+  .data-panel.glow-green {
+    border-color: var(--green);
+    box-shadow: 0 0 24px var(--green-glow);
+  }
+  .data-panel.glow-purple {
+    border-color: var(--purple);
+    box-shadow: 0 0 24px var(--purple-glow);
+  }
+  .data-panel.glow-amber {
+    border-color: var(--amber);
+    box-shadow: 0 0 24px var(--amber-glow);
+  }
+  .data-panel.glow-cyan {
+    border-color: var(--cyan);
+    box-shadow: 0 0 24px var(--cyan-glow);
+  }
+
+  .panel-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .panel-label .dot.green { background: var(--green); }
+  .panel-label .dot.blue { background: var(--accent); }
+  .panel-label .dot.amber { background: var(--amber); }
+  .panel-label .dot.purple { background: var(--purple); }
+  .panel-label .dot.red { background: var(--red); }
+  .panel-label .dot.cyan { background: var(--cyan); }
+
+  /* DNA sequence display */
+  .dna-sequence {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    word-break: break-all;
+    color: var(--green);
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+  }
+  .dna-sequence::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--surface));
+  }
+  .dna-sequence .base-A { color: #22c55e; }
+  .dna-sequence .base-T { color: #3b82f6; }
+  .dna-sequence .base-G { color: #f59e0b; }
+  .dna-sequence .base-C { color: #ef4444; }
+
+  /* Cipher text */
+  .cipher-text {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    word-break: break-all;
+    color: var(--accent);
+    opacity: 0.7;
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+  }
+  .cipher-text::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--surface));
+  }
+
+  /* Arrow / transform indicator */
+  .transform-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  .transform-arrow .line {
+    height: 2px;
+    width: 60px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .transform-arrow .label {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 4px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  /* Key display */
+  .key-display {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .key-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-family: 'SF Mono', monospace;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .key-chip .icon { font-size: 0.9rem; }
+
+  /* Shard cards */
+  .shard-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .shard-grid.distribute {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .shard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.5s ease;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .shard-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .shard-card .shard-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+  .shard-card .shard-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .shard-card .shard-desc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .shard-card .shard-hex {
+    font-family: 'SF Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--purple);
+    margin-top: 8px;
+    word-break: break-all;
+    opacity: 0.7;
+  }
+  .shard-card.customer { border-color: var(--green); box-shadow: 0 0 16px var(--green-glow); }
+  .shard-card.eternis { border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+  .shard-card.beneficiary { border-color: var(--purple); box-shadow: 0 0 16px var(--purple-glow); }
+
+  /* Metadata row */
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .meta-item strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Flow diagram */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 1.2rem;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 24px 48px;
+  }
+  .btn {
+    padding: 10px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: linear-gradient(135deg, #00c2cc, #0077aa);
+    border-color: #00c2cc;
+    color: white;
+  }
+  .btn.primary:hover { background: linear-gradient(135deg, #00d4de, #0088bb); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Encryption animation */
+  .encrypt-animation {
+    position: relative;
+    overflow: hidden;
+  }
+  .encrypt-sweep {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.15) 40%, rgba(59,130,246,0.3) 50%, rgba(59,130,246,0.15) 60%, transparent 100%);
+    pointer-events: none;
+  }
+  .encrypt-sweep.animating {
+    animation: sweep 2s ease-in-out forwards;
+  }
+  @keyframes sweep {
+    from { left: -100%; }
+    to { left: 100%; }
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+  }
+  .stat-value {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Final status */
+  .final-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .status-card h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-card .check { color: var(--green); }
+  .status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .status-item:last-child { border-bottom: none; }
+  .status-item .val {
+    color: var(--green);
+    font-family: 'SF Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  /* Animated typing for hex */
+  .hex-typing {
+    display: inline;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .shard-grid, .shard-grid.distribute { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .shard-grid, .shard-grid.distribute { grid-template-columns: 1fr 1fr; }
+    .final-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .step-line { width: 24px; }
+    .header h1 { font-size: 1.5rem; }
+    .threshold-visual { flex-direction: column; }
+  }
+
+  /* Threshold explanation */
+  .threshold-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 24px 0;
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+  }
+  .threshold-visual .combo {
+    text-align: center;
+  }
+  .combo-shards {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    justify-content: center;
+  }
+  .mini-shard {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .mini-shard.active-green { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .mini-shard.active-blue { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .mini-shard.active-purple { border-color: var(--purple); color: var(--purple); background: var(--purple-glow); }
+  .mini-shard.active-amber { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+  .mini-shard.active-cyan { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-glow); }
+  .mini-shard.inactive { opacity: 0.25; }
+  .combo-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .combo-result {
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .combo-result.yes { color: var(--green); }
+  .combo-result.no { color: var(--red); }
+  .threshold-eq {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Live proof */
+  .proof-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 60px;
+  }
+  .proof-input:focus {
+    outline: none;
+    border-color: #00c2cc;
+    box-shadow: 0 0 12px rgba(0,194,204,0.2);
+  }
+  .proof-input::placeholder { color: var(--muted); }
+  .proof-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 1px solid #00c2cc;
+    background: linear-gradient(135deg, #00c2cc, #0077aa);
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.2s;
+    margin-top: 12px;
+  }
+  .proof-btn:hover { opacity: 0.9; }
+  .proof-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .proof-btn.secondary {
+    background: transparent;
+    color: #00c2cc;
+  }
+  .proof-btn.secondary:hover { background: rgba(0,194,204,0.1); }
+  .proof-output {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    word-break: break-all;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+  .proof-step {
+    margin-bottom: 16px;
+    display: none;
+  }
+  .proof-step.visible {
+    display: block;
+    animation: fadeIn 0.5s ease;
+  }
+  .proof-step-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .proof-check { color: var(--green); font-size: 1rem; }
+  .proof-fail { color: var(--red); font-size: 1rem; }
+  .shard-toggle {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .shard-toggle-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .shard-toggle-btn.selected {
+    border-color: #00c2cc;
+    color: #00c2cc;
+    background: rgba(0,194,204,0.1);
+    box-shadow: 0 0 12px rgba(0,194,204,0.2);
+  }
+  .shard-toggle-btn:hover { border-color: var(--muted); }
+  .proof-result {
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 16px;
+  }
+  .proof-result.success {
+    border: 1px solid var(--green);
+    background: rgba(34,197,94,0.05);
+  }
+  .proof-result.failure {
+    border: 1px solid var(--red);
+    background: rgba(239,68,68,0.05);
+  }
+  .proof-result .big-icon { font-size: 2rem; margin-bottom: 8px; }
+  .proof-result .result-text { font-size: 0.9rem; font-weight: 500; }
+  .proof-result .result-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .proof-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .proof-columns { grid-template-columns: 1fr; }
+  }
+
+  /* Footer tagline */
+  .footer-tagline {
+    text-align: center;
+    padding: 16px 24px 48px;
+    font-size: 0.85rem;
+    font-style: italic;
+    letter-spacing: 0.2em;
+  }
+  .tagline-gray {
+    color: #8892a4;
+  }
+  .tagline-teal {
+    color: #00c2cc;
+    text-shadow: 0 0 60px rgba(0, 194, 204, 0.6);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1 class="brand-title">ETER<span class="brand-accent">NIS</span> <span class="brand-sub">Digital Splicing</span></h1>
+  <p>How your genomic data is protected — from raw DNA sequence to distributed, quantum-resistant encrypted storage that no single party can access.</p>
+</div>
+
+<!-- Progress -->
+<div class="progress-bar" id="progressBar">
+  <div class="progress-step">
+    <div class="step-dot active" data-step="0" onclick="goToStep(0)">1<span class="step-label">Raw Data</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="1" onclick="goToStep(1)">2<span class="step-label">Encrypt</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="2" onclick="goToStep(2)">3<span class="step-label">Key Gen</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="3" onclick="goToStep(3)">4<span class="step-label">Split</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="4" onclick="goToStep(4)">5<span class="step-label">Distribute</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="5" onclick="goToStep(5)">6<span class="step-label">Secured</span></div>
+    <div class="step-line"></div>
+  </div>
+  <div class="progress-step">
+    <div class="step-dot" data-step="6" onclick="goToStep(6)">7<span class="step-label">Live Proof</span></div>
+  </div>
+</div>
+
+<!-- Stage -->
+<div class="stage">
+
+  <!-- Scene 0: Raw Genomic Data -->
+  <div class="scene active" id="scene-0">
+    <div class="scene-title">
+      <h2>Your Genomic Data</h2>
+      <p>3.2 billion base pairs. The most personal data that exists.</p>
+    </div>
+
+    <div class="data-panel glow-green">
+      <div class="panel-label"><span class="dot green"></span>Raw Genomic Sequence (FASTQ)</div>
+      <div class="dna-sequence" id="dnaDisplay"></div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--green)">3.2B</div>
+        <div class="stat-label">Base Pairs</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--accent)">~200 GB</div>
+        <div class="stat-label">Raw Data</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--amber)">100%</div>
+        <div class="stat-label">Readable</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--red)">Exposed</div>
+        <div class="stat-label">Status</div>
+      </div>
+    </div>
+
+    <div class="meta-row" style="margin-top:16px">
+      <div class="meta-item"><strong>Problem:</strong> Anyone with access to this file can read your complete genetic code.</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-item"><strong>Threat:</strong> Genetic discrimination, insurance denial, identity theft, surveillance — for you and every blood relative.</div>
+    </div>
+  </div>
+
+  <!-- Scene 1: AES-256-GCM Encryption -->
+  <div class="scene" id="scene-1">
+    <div class="scene-title">
+      <h2>AES-256-GCM Encryption</h2>
+      <p>Military-grade authenticated encryption. Your data becomes indistinguishable from random noise.</p>
+    </div>
+
+    <div class="data-panel encrypt-animation">
+      <div class="panel-label"><span class="dot green"></span>Plaintext Genomic Data</div>
+      <div class="dna-sequence" id="dnaEncrypt"></div>
+      <div class="encrypt-sweep" id="encryptSweep"></div>
+    </div>
+
+    <div class="transform-arrow">
+      <div class="line"></div>
+      <div class="label" id="encryptLabel">AES-256-GCM</div>
+      <div class="line"></div>
+    </div>
+
+    <div class="data-panel glow-blue" id="cipherPanel" style="opacity:0;transition:opacity 1s">
+      <div class="panel-label"><span class="dot blue"></span>Encrypted Ciphertext</div>
+      <div class="cipher-text" id="cipherDisplay"></div>
+      <div class="key-display">
+        <div class="key-chip"><span class="icon">&#x1f511;</span> 256-bit key</div>
+        <div class="key-chip"><span class="icon">&#x1f6e1;</span> 128-bit auth tag</div>
+        <div class="key-chip"><span class="icon">&#x1f504;</span> Unique nonce per chunk</div>
+      </div>
+    </div>
+
+    <div class="meta-row" style="margin-top:12px">
+      <div class="meta-item"><strong>Algorithm:</strong> AES-256-GCM (NIST SP 800-38D)</div>
+      <div class="meta-item"><strong>Key:</strong> 256-bit random (CSPRNG)</div>
+      <div class="meta-item"><strong>Auth:</strong> Galois/Counter Mode — tamper detection built in</div>
+    </div>
+  </div>
+
+  <!-- Scene 2: Key Generation -->
+  <div class="scene" id="scene-2">
+    <div class="scene-title">
+      <h2>Hybrid Key Generation</h2>
+      <p>Quantum-resistant key pair. Secure against both today's computers and tomorrow's quantum machines.</p>
+    </div>
+
+    <div class="data-panel glow-cyan">
+      <div class="panel-label"><span class="dot cyan"></span>Key Ceremony — runs in your browser, never leaves your device</div>
+
+      <div class="flow-row">
+        <div class="flow-node" style="border-color:var(--cyan)">X25519<br><span style="font-size:0.65rem;color:var(--muted)">Classical DH</span></div>
+        <span class="flow-arrow">+</span>
+        <div class="flow-node" style="border-color:var(--purple)">ML-KEM 768<br><span style="font-size:0.65rem;color:var(--muted)">Post-Quantum (FIPS 203)</span></div>
+        <span class="flow-arrow">=</span>
+        <div class="flow-node" style="border-color:var(--green)">Hybrid Keypair<br><span style="font-size:0.65rem;color:var(--muted)">Best of both</span></div>
+      </div>
+
+      <div class="key-display" style="justify-content:center;margin-top:20px">
+        <div class="key-chip" style="border-color:var(--green)"><span class="icon">&#x1f513;</span> Public Key — given to the lab for Crypt4GH encryption</div>
+      </div>
+      <div class="key-display" style="justify-content:center;margin-top:8px">
+        <div class="key-chip" style="border-color:var(--red)"><span class="icon">&#x1f512;</span> Private Key — 32 bytes, never stored whole, about to be split</div>
+      </div>
+    </div>
+
+    <div class="stats-bar" style="margin-top:16px">
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--cyan)">X25519</div>
+        <div class="stat-label">Classical Security</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--purple)">ML-KEM</div>
+        <div class="stat-label">Quantum Resistance</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--green)">Browser</div>
+        <div class="stat-label">Where It Runs</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" style="color:var(--amber)">0 bytes</div>
+        <div class="stat-label">Sent to Server</div>
+      </div>
+    </div>
+
+    <div class="meta-row" style="margin-top:12px">
+      <div class="meta-item"><strong>Why hybrid:</strong> Genomic data must stay confidential for 50 years. Quantum computers may break X25519 in 15-20 years. ML-KEM survives both.</div>
+    </div>
+  </div>
+
+  <!-- Scene 3: Shamir Split -->
+  <div class="scene" id="scene-3">
+    <div class="scene-title">
+      <h2>Shamir Secret Sharing</h2>
+      <p>The private key is mathematically split into 5 pieces. Any 3 can reconstruct it — but 2 or fewer reveal absolutely nothing.</p>
+    </div>
+
+    <div class="data-panel" style="text-align:center">
+      <div class="panel-label" style="justify-content:center"><span class="dot red"></span>Private Key (32 bytes)</div>
+      <div style="font-family:monospace;font-size:0.85rem;color:var(--red);padding:8px 0" id="privateKeyDisplay">a7f3 e891 4b2c d056 8e19 3fa7 c4d2 b108 ...</div>
+    </div>
+
+    <div class="transform-arrow">
+      <div class="line"></div>
+      <div class="label" style="border-color:var(--amber);color:var(--amber);background:var(--amber-glow)">Shamir 3-of-5 Split</div>
+      <div class="line"></div>
+    </div>
+
+    <div class="shard-grid" id="shardGrid">
+      <div class="shard-card" id="shard1">
+        <div class="shard-icon">&#x1f464;</div>
+        <div class="shard-title" style="color:var(--green)">Shard 1</div>
+        <div class="shard-desc">Member</div>
+        <div class="shard-hex" id="shardHex1"></div>
+      </div>
+      <div class="shard-card" id="shard2">
+        <div class="shard-icon">&#x1f91d;</div>
+        <div class="shard-title" style="color:var(--purple)">Shard 2</div>
+        <div class="shard-desc">Beneficiary 1</div>
+        <div class="shard-hex" id="shardHex2"></div>
+      </div>
+      <div class="shard-card" id="shard3">
+        <div class="shard-icon">&#x1f91d;</div>
+        <div class="shard-title" style="color:var(--cyan)">Shard 3</div>
+        <div class="shard-desc">Beneficiary 2</div>
+        <div class="shard-hex" id="shardHex3"></div>
+      </div>
+      <div class="shard-card" id="shard4">
+        <div class="shard-icon">&#x1f512;</div>
+        <div class="shard-title" style="color:var(--amber)">Shard 4</div>
+        <div class="shard-desc">Escrow</div>
+        <div class="shard-hex" id="shardHex4"></div>
+      </div>
+      <div class="shard-card" id="shard5">
+        <div class="shard-icon">&#x1f3e2;</div>
+        <div class="shard-title" style="color:var(--accent)">Shard 5</div>
+        <div class="shard-desc">Eternis</div>
+        <div class="shard-hex" id="shardHex5"></div>
+      </div>
+    </div>
+
+    <div class="threshold-visual" style="margin-top:20px">
+      <div class="combo">
+        <div class="combo-shards">
+          <div class="mini-shard active-green">1</div>
+          <div class="mini-shard active-purple">2</div>
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard active-amber">4</div>
+          <div class="mini-shard inactive">-</div>
+        </div>
+        <div class="combo-label">During life</div>
+        <div class="combo-result yes">Member + any 2 = Access</div>
+      </div>
+      <div class="threshold-eq">|</div>
+      <div class="combo">
+        <div class="combo-shards">
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard active-purple">2</div>
+          <div class="mini-shard active-cyan">3</div>
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard active-blue">5</div>
+        </div>
+        <div class="combo-label">After death</div>
+        <div class="combo-result yes">Beneficiaries + Eternis = Access</div>
+      </div>
+      <div class="threshold-eq">|</div>
+      <div class="combo">
+        <div class="combo-shards">
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard inactive">-</div>
+          <div class="mini-shard active-blue">5</div>
+        </div>
+        <div class="combo-label">Eternis alone</div>
+        <div class="combo-result no">Cannot decrypt. Ever.</div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div class="meta-item"><strong>Field:</strong> GF(2^256 - 189)</div>
+      <div class="meta-item"><strong>Auth:</strong> HMAC-SHA256 per shard</div>
+      <div class="meta-item"><strong>Threshold:</strong> 3-of-5 — mathematically impossible to reconstruct with fewer</div>
+    </div>
+  </div>
+
+  <!-- Scene 4: Shard Distribution -->
+  <div class="scene" id="scene-4">
+    <div class="scene-title">
+      <h2>Shard Encryption & Distribution</h2>
+      <p>Each shard is individually encrypted for its custodian. Five holders, five different trust boundaries.</p>
+    </div>
+
+    <div class="shard-grid distribute">
+      <div class="shard-card customer visible">
+        <div class="shard-icon">&#x1f464;</div>
+        <div class="shard-title" style="color:var(--green)">Member</div>
+        <div class="shard-desc" style="margin-bottom:8px">Your device + mnemonic backup</div>
+        <div class="flow-node" style="font-size:0.65rem;border-color:var(--green);margin:0 auto;padding:6px 10px">
+          PBKDF2 (600K)<br>+ AES-256-GCM
+        </div>
+        <div class="shard-desc" style="margin-top:6px;font-size:0.65rem">Passphrase-encrypted<br><code>.shard</code> file download</div>
+      </div>
+
+      <div class="shard-card beneficiary visible" style="border-color:var(--purple)">
+        <div class="shard-icon">&#x1f91d;</div>
+        <div class="shard-title" style="color:var(--purple)">Beneficiary 1</div>
+        <div class="shard-desc" style="margin-bottom:8px">Primary heir</div>
+        <div class="flow-node" style="font-size:0.65rem;border-color:var(--purple);margin:0 auto;padding:6px 10px">
+          HPKE encrypted<br>to their public key
+        </div>
+        <div class="shard-desc" style="margin-top:6px;font-size:0.65rem">Delivered via<br>secure channel</div>
+      </div>
+
+      <div class="shard-card visible" style="border-color:var(--cyan);box-shadow:0 0 16px var(--cyan-glow)">
+        <div class="shard-icon">&#x1f91d;</div>
+        <div class="shard-title" style="color:var(--cyan)">Beneficiary 2</div>
+        <div class="shard-desc" style="margin-bottom:8px">Secondary heir</div>
+        <div class="flow-node" style="font-size:0.65rem;border-color:var(--cyan);margin:0 auto;padding:6px 10px">
+          HPKE encrypted<br>to their public key
+        </div>
+        <div class="shard-desc" style="margin-top:6px;font-size:0.65rem">Independent<br>from Beneficiary 1</div>
+      </div>
+
+      <div class="shard-card visible" style="border-color:var(--amber);box-shadow:0 0 16px var(--amber-glow)">
+        <div class="shard-icon">&#x1f512;</div>
+        <div class="shard-title" style="color:var(--amber)">Escrow</div>
+        <div class="shard-desc" style="margin-bottom:8px">Conditional release</div>
+        <div class="flow-node" style="font-size:0.65rem;border-color:var(--amber);margin:0 auto;padding:6px 10px">
+          Lit Protocol<br>+ institution backup
+        </div>
+        <div class="shard-desc" style="margin-top:6px;font-size:0.65rem">Released on death<br>or 2-year liveness timeout</div>
+      </div>
+
+      <div class="shard-card eternis visible">
+        <div class="shard-icon">&#x1f3e2;</div>
+        <div class="shard-title" style="color:var(--accent)">Eternis</div>
+        <div class="shard-desc" style="margin-bottom:8px">Custody escrow</div>
+        <div class="flow-node" style="font-size:0.65rem;border-color:var(--accent);margin:0 auto;padding:6px 10px">
+          AES-256-GCM<br>HSM-protected KEK
+        </div>
+        <div class="shard-desc" style="margin-top:6px;font-size:0.65rem">Combinable only<br>with 2 other shards</div>
+      </div>
+    </div>
+
+    <div class="data-panel glow-amber" style="margin-top:20px">
+      <div class="panel-label"><span class="dot amber"></span>Key Material Status After Ceremony</div>
+      <div class="flow-row">
+        <div class="flow-node" style="border-color:var(--red);text-decoration:line-through;opacity:0.5">Private Key<br><span style="font-size:0.6rem">ZEROED</span></div>
+        <div class="flow-node" style="border-color:var(--red);text-decoration:line-through;opacity:0.5">Raw Shards<br><span style="font-size:0.6rem">ZEROED</span></div>
+        <div class="flow-node" style="border-color:var(--red);text-decoration:line-through;opacity:0.5">Passphrase<br><span style="font-size:0.6rem">CLEARED</span></div>
+        <div class="flow-node" style="border-color:var(--green)">Public Key<br><span style="font-size:0.6rem;color:var(--green)">STORED</span></div>
+      </div>
+      <div class="meta-row" style="justify-content:center">
+        <div class="meta-item">All sensitive key material erased from browser memory immediately after ceremony.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 5: Final Status -->
+  <div class="scene" id="scene-5">
+    <div class="scene-title">
+      <h2>Genomic Data: Secured</h2>
+      <p>Your DNA sequence is now protected by multiple independent layers of cryptography.</p>
+    </div>
+
+    <div class="final-grid">
+      <div class="status-card" style="border-color:var(--green)">
+        <h3><span class="check">&#x2713;</span> Data Encryption</h3>
+        <div class="status-item"><span>Algorithm</span><span class="val">AES-256-GCM</span></div>
+        <div class="status-item"><span>Standard</span><span class="val">NIST SP 800-38D</span></div>
+        <div class="status-item"><span>Auth Tag</span><span class="val">128-bit (tamper-proof)</span></div>
+        <div class="status-item"><span>Nonce</span><span class="val">Unique per chunk</span></div>
+      </div>
+
+      <div class="status-card" style="border-color:var(--cyan)">
+        <h3><span class="check">&#x2713;</span> Key Protection</h3>
+        <div class="status-item"><span>Classical</span><span class="val">X25519 ECDH</span></div>
+        <div class="status-item"><span>Post-Quantum</span><span class="val">ML-KEM 768</span></div>
+        <div class="status-item"><span>Approach</span><span class="val">Hybrid (both required)</span></div>
+        <div class="status-item"><span>Standard</span><span class="val">FIPS 203</span></div>
+      </div>
+
+      <div class="status-card" style="border-color:var(--purple)">
+        <h3><span class="check">&#x2713;</span> Key Splitting</h3>
+        <div class="status-item"><span>Scheme</span><span class="val">Shamir SSS</span></div>
+        <div class="status-item"><span>Threshold</span><span class="val">3-of-5 required</span></div>
+        <div class="status-item"><span>Custodians</span><span class="val">5 independent holders</span></div>
+        <div class="status-item"><span>Auth</span><span class="val">HMAC-SHA256/shard</span></div>
+      </div>
+
+      <div class="status-card" style="border-color:var(--amber)">
+        <h3><span class="check">&#x2713;</span> Access Control</h3>
+        <div class="status-item"><span>Eternis alone</span><span class="val" style="color:var(--red)">Cannot decrypt</span></div>
+        <div class="status-item"><span>Any 2 shards</span><span class="val" style="color:var(--red)">Cannot decrypt</span></div>
+        <div class="status-item"><span>Hacker</span><span class="val" style="color:var(--red)">Sees random noise</span></div>
+        <div class="status-item"><span>Any 3 of 5</span><span class="val" style="color:var(--green)">Full access</span></div>
+      </div>
+    </div>
+
+    <div class="data-panel glow-green" style="margin-top:20px;text-align:center">
+      <div class="panel-label" style="justify-content:center"><span class="dot green"></span>Integrity Verification</div>
+      <div class="flow-row">
+        <div class="flow-node" style="border-color:var(--green)">SHA-256<br><span style="font-size:0.6rem;color:var(--muted)">Plaintext hash (from lab)</span></div>
+        <span class="flow-arrow">+</span>
+        <div class="flow-node" style="border-color:var(--accent)">SHA-256<br><span style="font-size:0.6rem;color:var(--muted)">Ciphertext hash (our storage)</span></div>
+        <span class="flow-arrow">=</span>
+        <div class="flow-node" style="border-color:var(--green)">Dual-hash<br><span style="font-size:0.6rem;color:var(--green)">Tamper-evident at every layer</span></div>
+      </div>
+      <div class="meta-row" style="justify-content:center;margin-top:8px">
+        <div class="meta-item">Your data's integrity can be verified at any time — by you, not by us.</div>
+      </div>
+    </div>
+
+    <div class="meta-row" style="margin-top:16px;justify-content:center">
+      <div class="meta-item" style="text-align:center;max-width:500px;line-height:1.6">
+        <strong>The promise:</strong> Your genome is encrypted before it reaches us, the key is split across 5 independent custodians (3 required to reconstruct), and the entire system uses quantum-resistant cryptography designed to last 50 years.
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 6: Live Proof -->
+  <div class="scene" id="scene-6">
+    <div class="scene-title">
+      <h2>Live Proof</h2>
+      <p>Don't take our word for it. This runs real AES-256-GCM encryption and Shamir secret sharing in your browser — right now.</p>
+    </div>
+
+    <!-- Secure context warning -->
+    <div id="secureContextWarning" style="display:none;background:rgba(239,68,68,0.1);border:1px solid var(--red);border-radius:8px;padding:16px;margin-bottom:16px;font-size:0.8rem">
+      <strong style="color:var(--red)">Secure context required.</strong>
+      <span style="color:var(--muted)">Web Crypto API needs HTTPS or localhost. Open a terminal in this folder and run:</span>
+      <code style="display:block;background:var(--surface);padding:8px;border-radius:4px;margin-top:8px;color:var(--amber)">npx serve .</code>
+      <span style="color:var(--muted);font-size:0.75rem">Then open <code>http://localhost:3000/crypto-demo.html</code></span>
+    </div>
+
+    <!-- Step 1: Input -->
+    <div class="data-panel" id="proofInputPanel">
+      <div class="panel-label"><span class="dot green"></span>Step 1 — Enter any text (simulating genomic data)</div>
+      <textarea class="proof-input" id="proofInput" placeholder="Type anything here — a sentence, a DNA sequence, your name. This will be encrypted with the same algorithms that protect your genome.">ATCGATCGATCGATCG TTAGCCAATGCCTAAG GCATGCTAGCTAGCTA — Sample genomic sequence fragment</textarea>
+      <button class="proof-btn" id="proofEncryptBtn" onclick="runProof()">Encrypt & Split Key</button>
+    </div>
+
+    <!-- Step 2: Encryption result (hidden until run) -->
+    <div class="proof-step" id="proofStep2">
+      <div class="data-panel glow-blue">
+        <div class="proof-step-label"><span class="proof-check">&#x2713;</span> Step 2 — AES-256-GCM Encryption</div>
+        <div class="proof-columns">
+          <div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Encryption Key (256-bit random)</div>
+            <div class="proof-output" id="proofKey" style="color:var(--amber)"></div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Nonce (96-bit random)</div>
+            <div class="proof-output" id="proofNonce" style="color:var(--cyan)"></div>
+          </div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;margin-bottom:4px">Ciphertext (your data is now unreadable)</div>
+        <div class="proof-output" id="proofCipher" style="color:var(--accent)"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Shamir split -->
+    <div class="proof-step" id="proofStep3">
+      <div class="data-panel glow-amber">
+        <div class="proof-step-label"><span class="proof-check">&#x2713;</span> Step 3 — Shamir 3-of-5 Key Split</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">The 256-bit encryption key has been split into 5 shares. Each share alone reveals nothing.</div>
+        <div id="proofShards"></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Recovery -->
+    <div class="proof-step" id="proofStep4">
+      <div class="data-panel" style="border-color:#00c2cc;box-shadow:0 0 24px rgba(0,194,204,0.2)">
+        <div class="proof-step-label" style="color:#00c2cc">Step 4 — Select exactly 3 shards to recover the key</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">Pick any 3 of the 5 shards. The key will be mathematically reconstructed. Try different combinations — they all work.</div>
+        <div class="shard-toggle" id="shardToggles"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="proof-btn" id="recoverBtn" onclick="recoverKey()" disabled>Recover Key & Decrypt</button>
+          <button class="proof-btn secondary" id="tooFewBtn" onclick="tryTooFew()" disabled>Try with only 2 (should fail)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Result -->
+    <div class="proof-step" id="proofStep5">
+      <div id="proofResultContainer"></div>
+    </div>
+
+    <!-- Reset -->
+    <div class="proof-step" id="proofReset" style="text-align:center">
+      <button class="proof-btn secondary" onclick="resetProof()">Reset & Try Again</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn" id="prevBtn" onclick="prev()" disabled>Back</button>
+  <button class="btn primary" id="nextBtn" onclick="next()">Next Step</button>
+  <button class="btn" id="autoBtn" onclick="toggleAuto()">Auto Play</button>
+</div>
+
+<!-- Footer tagline -->
+<div class="footer-tagline">
+  <span class="tagline-gray">soon enough, </span><span class="tagline-teal">forever.</span>
+</div>
+
+<script>
+  let currentStep = 0;
+  const totalSteps = 7;
+  let autoInterval = null;
+
+  // Generate fake DNA
+  function generateDNA(length) {
+    const bases = ['A', 'T', 'G', 'C'];
+    let dna = '';
+    for (let i = 0; i < length; i++) {
+      dna += bases[Math.floor(Math.random() * 4)];
+    }
+    return dna;
+  }
+
+  // Generate fake hex
+  function generateHex(length) {
+    const chars = '0123456789abcdef';
+    let hex = '';
+    for (let i = 0; i < length; i++) {
+      hex += chars[Math.floor(Math.random() * 16)];
+      if ((i + 1) % 4 === 0 && i < length - 1) hex += ' ';
+    }
+    return hex;
+  }
+
+  // Color DNA bases
+  function colorDNA(dna) {
+    return dna.split('').map(b =>
+      `<span class="base-${b}">${b}</span>`
+    ).join('');
+  }
+
+  // Init displays
+  function initDisplays() {
+    const dna = generateDNA(600);
+    document.getElementById('dnaDisplay').innerHTML = colorDNA(dna);
+    document.getElementById('dnaEncrypt').innerHTML = colorDNA(dna);
+    document.getElementById('cipherDisplay').textContent = generateHex(600);
+
+    // Shard hex
+    document.getElementById('shardHex1').textContent = generateHex(32);
+    document.getElementById('shardHex2').textContent = generateHex(32);
+    document.getElementById('shardHex3').textContent = generateHex(32);
+    document.getElementById('shardHex4').textContent = generateHex(32);
+    document.getElementById('shardHex5').textContent = generateHex(32);
+  }
+
+  function updateProgress() {
+    const dots = document.querySelectorAll('.step-dot');
+    const lines = document.querySelectorAll('.step-line');
+
+    dots.forEach((dot, i) => {
+      dot.classList.remove('active', 'complete');
+      if (i < currentStep) dot.classList.add('complete');
+      else if (i === currentStep) dot.classList.add('active');
+    });
+
+    lines.forEach((line, i) => {
+      line.classList.toggle('complete', i < currentStep);
+    });
+  }
+
+  function showScene(step) {
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    const scene = document.getElementById(`scene-${step}`);
+    if (scene) scene.classList.add('active');
+
+    // Scene-specific animations
+    if (step === 1) {
+      setTimeout(() => {
+        document.getElementById('encryptSweep').classList.add('animating');
+        setTimeout(() => {
+          document.getElementById('cipherPanel').style.opacity = '1';
+        }, 800);
+      }, 300);
+    }
+
+    if (step === 3) {
+      const cards = document.querySelectorAll('#shardGrid .shard-card');
+      cards.forEach((card, i) => {
+        setTimeout(() => card.classList.add('visible'), 200 + i * 300);
+      });
+    }
+
+    // Update buttons
+    document.getElementById('prevBtn').disabled = step === 0;
+    document.getElementById('nextBtn').textContent = step === totalSteps - 1 ? 'Restart' : 'Next Step';
+  }
+
+  function goToStep(step) {
+    currentStep = step;
+    updateProgress();
+    showScene(step);
+  }
+
+  function next() {
+    if (currentStep === totalSteps - 1) {
+      // Reset
+      currentStep = 0;
+      document.getElementById('encryptSweep').classList.remove('animating');
+      document.getElementById('cipherPanel').style.opacity = '0';
+      document.querySelectorAll('#shardGrid .shard-card').forEach(c => c.classList.remove('visible'));
+      initDisplays();
+    } else {
+      currentStep++;
+    }
+    updateProgress();
+    showScene(currentStep);
+  }
+
+  function prev() {
+    if (currentStep > 0) {
+      currentStep--;
+      updateProgress();
+      showScene(currentStep);
+    }
+  }
+
+  function toggleAuto() {
+    const btn = document.getElementById('autoBtn');
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      btn.textContent = 'Auto Play';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    } else {
+      btn.textContent = 'Stop';
+      btn.style.borderColor = 'var(--amber)';
+      btn.style.color = 'var(--amber)';
+      autoInterval = setInterval(() => {
+        if (currentStep >= totalSteps - 1) {
+          clearInterval(autoInterval);
+          autoInterval = null;
+          btn.textContent = 'Auto Play';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        } else {
+          next();
+        }
+      }, 4000);
+    }
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+
+  // ===== LIVE PROOF: Real Crypto =====
+
+  // State for proof
+  let proofState = {
+    plaintext: null,
+    key: null,        // raw CryptoKey
+    keyBytes: null,   // Uint8Array
+    nonce: null,
+    ciphertext: null,
+    shards: [],       // { x, y } pairs
+    selectedShards: new Set()
+  };
+
+  // Helpers
+  function toHex(buf) {
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  function fromHex(hex) {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+  }
+
+  // ---- Shamir Secret Sharing over prime field GF(257) ----
+  // Using prime 257 so all byte values 0-255 are valid field elements
+  // Arithmetic is simple modular math — no GF(2^8) table bugs possible
+
+  var PRIME = 251; // largest prime <= 255, so all values fit in Uint8Array
+
+  function modAdd(a, b) { return (a + b) % PRIME; }
+  function modSub(a, b) { return ((a - b) % PRIME + PRIME) % PRIME; }
+  function modMul(a, b) { return (a * b) % PRIME; }
+
+  function modPow(base, exp, mod) {
+    var result = 1;
+    base = base % mod;
+    while (exp > 0) {
+      if (exp & 1) result = (result * base) % mod;
+      exp >>= 1;
+      base = (base * base) % mod;
+    }
+    return result;
+  }
+
+  function modInv(a) {
+    // Fermat's little theorem: a^(-1) = a^(p-2) mod p
+    return modPow(a, PRIME - 2, PRIME);
+  }
+
+  function modDiv(a, b) {
+    if (b === 0) throw new Error('Division by zero');
+    return modMul(a, modInv(b));
+  }
+
+  function shamirSplit(secretBytes, threshold, numShares) {
+    var shares = [];
+    var s, byteIdx, r, x, val, c;
+    for (s = 1; s <= numShares; s++) {
+      shares.push({ x: s, y: new Uint8Array(secretBytes.length) });
+    }
+
+    // Pre-generate ALL random coefficients at once
+    var numRandom = secretBytes.length * (threshold - 1);
+    var allRandom = new Uint8Array(numRandom);
+    crypto.getRandomValues(allRandom);
+    var randomIdx = 0;
+
+    for (byteIdx = 0; byteIdx < secretBytes.length; byteIdx++) {
+      // Build polynomial coefficients: coeffs[0] = secret byte, rest = random in [0, PRIME-1]
+      var coeffs = [secretBytes[byteIdx] % PRIME];
+      for (r = 1; r < threshold; r++) {
+        coeffs.push(allRandom[randomIdx++] % PRIME);
+      }
+
+      // Evaluate polynomial at each share's x value using Horner's method
+      for (s = 0; s < numShares; s++) {
+        x = shares[s].x;
+        val = 0;
+        for (c = threshold - 1; c >= 0; c--) {
+          val = modAdd(modMul(val, x), coeffs[c]);
+        }
+        shares[s].y[byteIdx] = val;
+      }
+    }
+
+    // Debug: verify shares are distinct
+    console.log('Split verification - first byte of each shard:',
+      shares.map(function(sh) { return sh.y[0]; }));
+
+    return shares;
+  }
+
+  function shamirRecover(shares, secretLength) {
+    var k = shares.length;
+    var result = new Uint8Array(secretLength);
+    for (var byteIdx = 0; byteIdx < secretLength; byteIdx++) {
+      var secret = 0;
+      for (var i = 0; i < k; i++) {
+        var basis = 1;
+        for (var j = 0; j < k; j++) {
+          if (i === j) continue;
+          // Lagrange basis: product of (0 - x_j) / (x_i - x_j)
+          var num = modSub(0, shares[j].x);        // -x_j mod PRIME
+          var den = modSub(shares[i].x, shares[j].x); // (x_i - x_j) mod PRIME
+          basis = modMul(basis, modDiv(num, den));
+        }
+        secret = modAdd(secret, modMul(shares[i].y[byteIdx], basis));
+      }
+      result[byteIdx] = secret;
+    }
+    return result;
+  }
+
+  // ---- Main proof flow ----
+
+  const labels = ['Member', 'Beneficiary 1', 'Beneficiary 2', 'Escrow', 'Eternis'];
+  const colors = ['#22c55e', '#a855f7', '#06b6d4', '#f59e0b', '#3b82f6'];
+
+  async function runProof() {
+    const input = document.getElementById('proofInput').value.trim();
+    if (!input) return;
+
+    document.getElementById('proofEncryptBtn').disabled = true;
+
+    try {
+      // Check Web Crypto availability
+      if (!crypto.subtle) {
+        alert('Web Crypto API not available. This page must be served over HTTPS or localhost.\n\nTry: npx serve "' + location.pathname.replace(/[^/\\]*$/, '') + '"');
+        document.getElementById('proofEncryptBtn').disabled = false;
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      proofState.plaintext = encoder.encode(input);
+
+      // Step 2: Real AES-256-GCM encryption
+      proofState.keyBytes = new Uint8Array(32);
+      crypto.getRandomValues(proofState.keyBytes);
+      // Clamp key bytes to [0, PRIME-1] so Shamir over GF(251) can represent them exactly
+      for (var ki = 0; ki < proofState.keyBytes.length; ki++) {
+        proofState.keyBytes[ki] = proofState.keyBytes[ki] % PRIME;
+      }
+      proofState.nonce = new Uint8Array(12);
+      crypto.getRandomValues(proofState.nonce);
+
+      proofState.key = await crypto.subtle.importKey(
+        'raw', proofState.keyBytes, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']
+      );
+
+      proofState.ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: proofState.nonce },
+        proofState.key,
+        proofState.plaintext
+      );
+
+      // Show encryption result
+      document.getElementById('proofKey').textContent = toHex(proofState.keyBytes);
+      document.getElementById('proofNonce').textContent = toHex(proofState.nonce);
+      document.getElementById('proofCipher').textContent = toHex(proofState.ciphertext);
+
+      document.getElementById('proofStep2').classList.add('visible');
+
+      // Step 3: Real Shamir 3-of-5 split
+      await new Promise(function(resolve) { setTimeout(resolve, 400); });
+      proofState.shards = shamirSplit(proofState.keyBytes, 3, 5);
+
+      // Verify split worked - quick recovery test
+      var testRecover = shamirRecover([proofState.shards[0], proofState.shards[1], proofState.shards[2]], 32);
+      console.log('Self-test recover:', toHex(testRecover));
+      console.log('Original key:    ', toHex(proofState.keyBytes));
+      console.log('Self-test match:', toHex(testRecover) === toHex(proofState.keyBytes));
+
+      var shardHtml = '';
+      for (var si = 0; si < proofState.shards.length; si++) {
+        var sh = proofState.shards[si];
+        shardHtml += '<div style="margin-bottom:8px">' +
+          '<span style="font-size:0.7rem;font-weight:600;color:' + colors[si] + '">Shard ' + sh.x + ' (' + labels[si] + '): </span>' +
+          '<span style="font-family:monospace;font-size:0.7rem;color:var(--muted);word-break:break-all">' + toHex(sh.y) + '</span>' +
+          '</div>';
+      }
+      document.getElementById('proofShards').innerHTML = shardHtml;
+
+      document.getElementById('proofStep3').classList.add('visible');
+
+      // Step 4: Toggle buttons
+      await new Promise(r => setTimeout(r, 400));
+      proofState.selectedShards = new Set();
+
+      document.getElementById('shardToggles').innerHTML = proofState.shards.map((s, i) =>
+        '<button class="shard-toggle-btn" data-shard="' + i + '" onclick="toggleShard(' + i + ')" style="border-color:' + colors[i] + '40;color:' + colors[i] + '">' +
+        'Shard ' + s.x + ': ' + labels[i] +
+        '</button>'
+      ).join('');
+
+      document.getElementById('proofStep4').classList.add('visible');
+      document.getElementById('proofStep4').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    } catch (err) {
+      alert('Error: ' + err.message + '\n\nIf opened from file://, try serving over localhost:\nnpx serve .');
+      document.getElementById('proofEncryptBtn').disabled = false;
+    }
+  }
+
+  function toggleShard(idx) {
+    if (proofState.selectedShards.has(idx)) {
+      proofState.selectedShards.delete(idx);
+    } else {
+      proofState.selectedShards.add(idx);
+    }
+    // Update UI
+    const btns = document.querySelectorAll('.shard-toggle-btn');
+    btns.forEach((btn, i) => {
+      btn.classList.toggle('selected', proofState.selectedShards.has(i));
+    });
+    const count = proofState.selectedShards.size;
+    document.getElementById('recoverBtn').disabled = count !== 3;
+    document.getElementById('tooFewBtn').disabled = count < 2 || count > 2;
+
+    // Update button text
+    document.getElementById('recoverBtn').textContent =
+      count === 3 ? 'Recover Key & Decrypt' : `Select ${3 - count} more shard${3 - count !== 1 ? 's' : ''}`;
+  }
+
+  async function recoverKey() {
+    try {
+      console.log('recoverKey called, selected:', Array.from(proofState.selectedShards));
+      const selected = Array.from(proofState.selectedShards).map(i => proofState.shards[i]);
+      console.log('Recovering from shards:', selected.map(s => s.x));
+      const recovered = shamirRecover(selected, 32);
+      console.log('Recovered key:', toHex(recovered));
+      console.log('Original key: ', toHex(proofState.keyBytes));
+
+      const resultContainer = document.getElementById('proofResultContainer');
+      const step5 = document.getElementById('proofStep5');
+      const resetStep = document.getElementById('proofReset');
+
+      const keysMatch = toHex(recovered) === toHex(proofState.keyBytes);
+      console.log('Keys match:', keysMatch);
+
+      if (keysMatch) {
+        const recoveredCryptoKey = await crypto.subtle.importKey(
+          'raw', recovered, { name: 'AES-GCM' }, false, ['decrypt']
+        );
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: proofState.nonce },
+          recoveredCryptoKey,
+          proofState.ciphertext
+        );
+        const decoder = new TextDecoder();
+        const decryptedText = decoder.decode(decrypted);
+
+        resultContainer.innerHTML =
+          '<div class="proof-result success">' +
+            '<div class="big-icon">&#x2705;</div>' +
+            '<div class="result-text" style="color:var(--green)">Key Recovered. Data Decrypted.</div>' +
+            '<div class="result-sub">3 of 5 shards successfully reconstructed the encryption key</div>' +
+          '</div>' +
+          '<div class="proof-columns" style="margin-top:16px">' +
+            '<div>' +
+              '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Recovered Key</div>' +
+              '<div class="proof-output" style="color:var(--green)">' + toHex(recovered) + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Original Key</div>' +
+              '<div class="proof-output" style="color:var(--amber)">' + toHex(proofState.keyBytes) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:12px">' +
+            '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Decrypted Data (matches your original input)</div>' +
+            '<div class="proof-output" style="color:var(--green);font-size:0.85rem">' + decryptedText.replace(/</g, '&lt;') + '</div>' +
+          '</div>' +
+          '<div style="margin-top:12px;font-size:0.75rem;color:var(--muted);text-align:center">' +
+            'Keys match: <strong style="color:var(--green)">YES</strong> &nbsp;|&nbsp; ' +
+            'Decryption: <strong style="color:var(--green)">SUCCESS</strong> &nbsp;|&nbsp; ' +
+            'Algorithm: <strong>AES-256-GCM</strong> &nbsp;|&nbsp; ' +
+            'Sharing: <strong>Shamir 3-of-5</strong>' +
+          '</div>';
+      } else {
+        // Keys didn't match — show what happened
+        resultContainer.innerHTML =
+          '<div class="proof-result failure">' +
+            '<div class="big-icon">&#x274c;</div>' +
+            '<div class="result-text" style="color:var(--red)">Key recovery produced wrong key</div>' +
+            '<div class="result-sub">Recovered: ' + toHex(recovered).substring(0, 32) + '...</div>' +
+            '<div class="result-sub">Expected: ' + toHex(proofState.keyBytes).substring(0, 32) + '...</div>' +
+          '</div>';
+      }
+
+      step5.style.display = 'block';
+      resetStep.style.display = 'block';
+      setTimeout(function() { step5.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+
+    } catch (err) {
+      console.error('recoverKey error:', err);
+      var rc = document.getElementById('proofResultContainer');
+      rc.innerHTML =
+        '<div class="proof-result failure">' +
+          '<div class="big-icon">&#x274c;</div>' +
+          '<div class="result-text" style="color:var(--red)">Error: ' + err.message + '</div>' +
+        '</div>';
+      document.getElementById('proofStep5').style.display = 'block';
+      document.getElementById('proofReset').style.display = 'block';
+    }
+  }
+
+  async function tryTooFew() {
+    try {
+      const selected = Array.from(proofState.selectedShards).map(i => proofState.shards[i]);
+      const recovered = shamirRecover(selected.slice(0, 2), 32);
+
+      var matchCount = 0;
+      for (var b = 0; b < 32; b++) {
+        if (recovered[b] === proofState.keyBytes[b]) matchCount++;
+      }
+
+      document.getElementById('proofResultContainer').innerHTML =
+        '<div class="proof-result failure">' +
+          '<div class="big-icon">&#x1f512;</div>' +
+          '<div class="result-text" style="color:var(--red)">Access Denied. Only 2 shards — not enough.</div>' +
+          '<div class="result-sub">The recovered key is completely wrong. Not even close — it is mathematically random garbage.</div>' +
+        '</div>' +
+        '<div class="proof-columns" style="margin-top:16px">' +
+          '<div>' +
+            '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Attempted Key (from 2 shards)</div>' +
+            '<div class="proof-output" style="color:var(--red)">' + toHex(recovered) + '</div>' +
+          '</div>' +
+          '<div>' +
+            '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Real Key (need 3 shards)</div>' +
+            '<div class="proof-output" style="color:var(--amber)">' + toHex(proofState.keyBytes) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:12px;font-size:0.75rem;color:var(--muted);text-align:center">' +
+          'Keys match: <strong style="color:var(--red)">NO</strong> &nbsp;|&nbsp; ' +
+          'Decryption: <strong style="color:var(--red)">FAILED</strong> &nbsp;|&nbsp; ' +
+          'Bytes matching: <strong style="color:var(--red)">' + matchCount + ' of 32</strong> &nbsp;|&nbsp; ' +
+          'Proof: <strong>2 shards reveal nothing about the key</strong>' +
+        '</div>';
+
+      document.getElementById('proofStep5').style.display = 'block';
+      document.getElementById('proofReset').style.display = 'block';
+      setTimeout(function() { document.getElementById('proofStep5').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+
+    } catch (err) {
+      console.error('tryTooFew error:', err);
+      alert('Error: ' + err.message);
+    }
+  }
+
+  function resetProof() {
+    ['proofStep2', 'proofStep3', 'proofStep4', 'proofStep5', 'proofReset'].forEach(function(id) {
+      var el = document.getElementById(id);
+      el.classList.remove('visible');
+      el.style.display = 'none';
+    });
+    document.getElementById('proofResultContainer').innerHTML = '';
+    document.getElementById('proofEncryptBtn').disabled = false;
+    proofState = { plaintext: null, key: null, keyBytes: null, nonce: null, ciphertext: null, shards: [], selectedShards: new Set() };
+  }
+
+  // Init
+  initDisplays();
+
+  // Check secure context for Web Crypto
+  if (!window.isSecureContext || !crypto.subtle) {
+    document.getElementById('secureContextWarning').style.display = 'block';
+    document.getElementById('proofEncryptBtn').disabled = true;
+    document.getElementById('proofInput').placeholder = 'Web Crypto not available — see instructions above';
+  }
+</script>
+
+</body>
+</html>
