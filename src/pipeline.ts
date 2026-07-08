@@ -265,47 +265,14 @@ export async function recover(
   options?: { kem?: Kem },
 ): Promise<Uint8Array> {
   const kem = options?.kem ?? HYBRID_X25519_MLKEM768;
-  const threshold = pkg.metadata.threshold;
-
-  // Validate inputs
-  if (custodianPrivateKeys.length < threshold) {
+  if (custodianPrivateKeys.length < pkg.metadata.threshold) {
     throw new InvalidInputError(
-      `need at least ${String(threshold)} custodian private keys, got ${String(custodianPrivateKeys.length)}`,
+      `need at least ${String(pkg.metadata.threshold)} custodian private keys, got ${String(custodianPrivateKeys.length)}`,
     );
   }
-
-  // Step 1: Decrypt and verify each shard, rebuilding the same per-slot HPKE
-  // info that preserve() bound (F6). A shard moved to the wrong slot or from a
-  // different package fails HPKE decryption here.
-  const shards = [];
+  const shards: Shard[] = [];
   for (const { index, privateKey } of custodianPrivateKeys) {
-    const encryptedShard = pkg.encryptedShards[index];
-    if (!encryptedShard) {
-      throw new InvalidInputError(
-        `no encrypted shard at slot ${String(index)}`,
-      );
-    }
-    const shard = await recoverShard(encryptedShard, privateKey, ownerVerifyKey, {
-      kem,
-      info: shardInfo(pkg.metadata, index),
-    });
-    shards.push(shard);
+    shards.push(await recoverShardAt(pkg, index, privateKey, ownerVerifyKey, { kem }));
   }
-
-  // Step 2: Reconstruct DEK from shards
-  const rawDek = await combineShards(shards);
-
-  // Step 3: Decrypt data, verifying the metadata AAD binding (F8). Any tamper
-  // with the metadata block makes this AES-GCM decrypt fail.
-  const keyHandle = await _importRawKey(rawDek);
-  const plaintext = await decryptChunk(keyHandle, {
-    ciphertext: pkg.encryptedData.ciphertext,
-    iv: pkg.encryptedData.iv,
-    tag: pkg.encryptedData.tag,
-  }, dataAAD(pkg.metadata));
-
-  // Step 4: Best-effort erase DEK from memory
-  rawDek.fill(0);
-
-  return plaintext;
+  return openPreserved(pkg, shards, { kem });
 }
