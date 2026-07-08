@@ -143,6 +143,24 @@ export async function recoverShard(
     );
   }
 
+  // F7: validate the signature-algorithm identifier instead of ignoring it.
+  // Only ML-DSA-65 is supported; an unexpected id means a malformed or
+  // downgrade-tampered envelope, not a shard we can safely verify.
+  if (encryptedShard.sigAlgorithmId !== ALGORITHM_ID) {
+    throw new InvalidInputError(
+      `signature-algorithm mismatch: encrypted shard uses "${encryptedShard.sigAlgorithmId}" but only "${ALGORITHM_ID}" is supported`,
+    );
+  }
+
+  // F7/F1: reject wrong-length encapsulations up front with a clear error,
+  // matching unwrapKey(), rather than letting a downstream slice/noble call
+  // throw a raw structural error.
+  if (encryptedShard.enc.length !== kem.encSize) {
+    throw new InvalidInputError(
+      `enc must be ${String(kem.encSize)} bytes for ${kem.id}, got ${String(encryptedShard.enc.length)}`,
+    );
+  }
+
   // Validate owner verify key
   if (ownerVerifyKey.length !== PUBLIC_KEY_BYTES) {
     throw new InvalidInputError(

@@ -263,6 +263,53 @@ describe('recoverShard error cases', () => {
     ).rejects.toThrow(AuthenticationError);
   });
 
+  // F7: envelope algorithm identifiers must be authenticated/validated on recover.
+  it('sigAlgorithmId mismatch throws InvalidInputError', async () => {
+    const secret = crypto.getRandomValues(new Uint8Array(32));
+    const { shards } = await splitKey(secret, { threshold: 2, shares: 3 });
+    const ownerSig = generateSigningKeyPair();
+    const custodian = await generateMasterKeyPair(DHKEM_X25519);
+
+    const encrypted = await distributeShard(
+      shards[0]!,
+      custodian.publicKey,
+      ownerSig.secretKey,
+      { kem: DHKEM_X25519 },
+    );
+
+    await expect(
+      recoverShard(
+        { ...encrypted, sigAlgorithmId: 'ML-DSA-87' },
+        custodian.privateKey,
+        ownerSig.publicKey,
+        { kem: DHKEM_X25519 },
+      ),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
+  it('wrong-length enc throws InvalidInputError (not a raw slicing error)', async () => {
+    const secret = crypto.getRandomValues(new Uint8Array(32));
+    const { shards } = await splitKey(secret, { threshold: 2, shares: 3 });
+    const ownerSig = generateSigningKeyPair();
+    const custodian = await generateMasterKeyPair(DHKEM_X25519);
+
+    const encrypted = await distributeShard(
+      shards[0]!,
+      custodian.publicKey,
+      ownerSig.secretKey,
+      { kem: DHKEM_X25519 },
+    );
+
+    await expect(
+      recoverShard(
+        { ...encrypted, enc: encrypted.enc.slice(0, encrypted.enc.length - 1) },
+        custodian.privateKey,
+        ownerSig.publicKey,
+        { kem: DHKEM_X25519 },
+      ),
+    ).rejects.toThrow(InvalidInputError);
+  });
+
   it('KEM ID mismatch throws InvalidInputError', async () => {
     const secret = crypto.getRandomValues(new Uint8Array(32));
     const { shards } = await splitKey(secret, { threshold: 2, shares: 3 });

@@ -14,6 +14,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import type { Shard, SplitOptions, SplitResult } from '../types.js';
 import { InvalidInputError, ShardAuthenticationError } from '../errors.js';
 import { generateShares, reconstructSecret } from './shamir.js';
+import { P, bytesToBigInt } from './field.js';
 
 const SECRET_BYTES = 32;
 const MAC_BYTES = 32;
@@ -71,6 +72,17 @@ export async function splitKey(
   }
   if (secret.every((b) => b === 0)) {
     throw new InvalidInputError('secret must not be all zeros');
+  }
+  // F3: the Shamir substrate is GF(P) with P = 2^256 - 189. A secret whose
+  // big-endian value is >= P would be silently reduced mod P by generateShares
+  // and reconstruct to a DIFFERENT value, silently corrupting recovery. Reject
+  // it explicitly instead. (For pipeline-generated random DEKs this is
+  // astronomically unlikely, ~2^-248, but splitKey is a public API that may
+  // receive caller-supplied, non-uniform secrets.)
+  if (bytesToBigInt(secret) >= P) {
+    throw new InvalidInputError(
+      'secret is out of field range (its 256-bit value must be < 2^256 - 189)',
+    );
   }
   if (!Number.isInteger(options.threshold) || options.threshold < 2) {
     throw new InvalidInputError(

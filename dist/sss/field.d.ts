@@ -2,6 +2,21 @@
  * Prime field arithmetic over GF(p) where p = 2^256 - 189.
  * This is the largest 256-bit prime. All operations produce
  * results in [0, p). Used as the substrate for Shamir SSS.
+ *
+ * SECURITY - NOT CONSTANT TIME (finding F2, open):
+ * These operations use native JavaScript BigInt, whose execution time and
+ * allocation depend on operand magnitude/limb-count; `mod` also branches on the
+ * sign of an intermediate. When these run on SECRET values (share y-coordinates
+ * and the reconstructed DEK in shamir.ts), a co-resident or otherwise
+ * high-resolution timing observer can in principle learn information about the
+ * secret. Reconstruction is single-shot per package (not an adaptive oracle),
+ * and the Lagrange denominators are computed on PUBLIC indices, which bounds the
+ * practical leak, but this does not meet a constant-time bar.
+ *
+ * Mitigation status: run reconstruction only in a trusted, non-co-resident
+ * context. A constant-time replacement (vetted GF(2^8) byte-wise SSS or blinded
+ * interpolation) is deferred pending cryptographer review; do not add blinding
+ * here without that review, as an incorrect countermeasure gives false comfort.
  */
 /** The field prime: 2^256 - 189. */
 export declare const P: bigint;
