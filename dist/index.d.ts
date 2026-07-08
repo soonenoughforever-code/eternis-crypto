@@ -21,6 +21,6 @@ export type { SigningKeyPair, EncryptedShard } from './types.js';
 export { generateSigningKeyPair, sign, verify } from './sig/ml-dsa.js';
 export { distributeShard, recoverShard } from './sss/shard-encrypt.js';
 export type { PreservationPackage } from './types.js';
-export { preserve, recover } from './pipeline.js';
+export { preserve, recover, recoverShardAt, openPreserved } from './pipeline.js';
 export { EternisCryptoError, AuthenticationError, KeyExhaustedError, InvalidInputError, DecapsulationError, KeyWrappingError, ShardAuthenticationError, SignatureVerificationError, } from './errors.js';
 //# sourceMappingURL=index.d.ts.map
