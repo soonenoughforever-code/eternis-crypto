@@ -31,7 +31,7 @@ export { distributeShard, recoverShard } from './sss/shard-encrypt.js';
 
 // v0.5 — Preservation pipeline
 export type { PreservationPackage } from './types.js';
-export { preserve, recover } from './pipeline.js';
+export { preserve, recover, recoverShardAt, openPreserved } from './pipeline.js';
 
 // Shared errors
 export {

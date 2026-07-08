@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as api from '../src/index.js';
+import { recoverShardAt, openPreserved } from '../src/index.js';
 
 describe('public API surface', () => {
   it('exports exactly the expected symbols', () => {
@@ -27,6 +28,9 @@ describe('public API surface', () => {
       // v0.5 — Preservation pipeline
       'preserve',
       'recover',
+      // v0.6.1 -- Decomposed recovery API
+      'recoverShardAt',
+      'openPreserved',
       // Errors
       'EternisCryptoError',
       'AuthenticationError',
@@ -88,5 +92,10 @@ describe('public API surface', () => {
     for (const name of forbidden) {
       expect(Object.keys(api)).not.toContain(name);
     }
+  });
+
+  it('exports the decomposed-recovery API', () => {
+    expect(typeof recoverShardAt).toBe('function');
+    expect(typeof openPreserved).toBe('function');
   });
 });
