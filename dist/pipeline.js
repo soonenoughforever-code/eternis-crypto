@@ -166,40 +166,58 @@ export async function preserve(data, custodianPublicKeys, ownerSigningKey, optio
  *   array passed to preserve()), NOT the 1-based Shamir point index. Each
  *   `privateKey` must be the private key of the custodian at that slot.
  */
-export async function recover(pkg, custodianPrivateKeys, ownerVerifyKey, options) {
+/**
+ * Decrypt and verify a single preserved shard by its slot, rebuilding the same
+ * per-slot HPKE info that preserve() bound (F6). Building block for recovery
+ * that is performed across more than one location (e.g. server + client).
+ */
+export async function recoverShardAt(pkg, slotIndex, custodianPrivateKey, ownerVerifyKey, options) {
     const kem = options?.kem ?? HYBRID_X25519_MLKEM768;
+    const encryptedShard = pkg.encryptedShards[slotIndex];
+    if (!encryptedShard) {
+        throw new InvalidInputError(`no encrypted shard at slot ${String(slotIndex)}`);
+    }
+    return recoverShard(encryptedShard, custodianPrivateKey, ownerVerifyKey, {
+        kem,
+        info: shardInfo(pkg.metadata, slotIndex),
+    });
+}
+/**
+ * Combine a threshold-sized set of recovered shards and decrypt the preserved
+ * data, verifying the metadata AAD binding (F8). Enforces the package threshold
+ * and unique Shamir indexes before combining.
+ */
+export async function openPreserved(pkg, shards, _options) {
     const threshold = pkg.metadata.threshold;
-    // Validate inputs
-    if (custodianPrivateKeys.length < threshold) {
-        throw new InvalidInputError(`need at least ${String(threshold)} custodian private keys, got ${String(custodianPrivateKeys.length)}`);
+    if (shards.length < threshold) {
+        throw new InvalidInputError(`need at least ${String(threshold)} shards, got ${String(shards.length)}`);
     }
-    // Step 1: Decrypt and verify each shard, rebuilding the same per-slot HPKE
-    // info that preserve() bound (F6). A shard moved to the wrong slot or from a
-    // different package fails HPKE decryption here.
-    const shards = [];
-    for (const { index, privateKey } of custodianPrivateKeys) {
-        const encryptedShard = pkg.encryptedShards[index];
-        if (!encryptedShard) {
-            throw new InvalidInputError(`no encrypted shard at slot ${String(index)}`);
+    const seen = new Set();
+    for (const s of shards) {
+        if (seen.has(s.index)) {
+            throw new InvalidInputError(`duplicate shard index: ${String(s.index)}`);
         }
-        const shard = await recoverShard(encryptedShard, privateKey, ownerVerifyKey, {
-            kem,
-            info: shardInfo(pkg.metadata, index),
-        });
-        shards.push(shard);
+        seen.add(s.index);
     }
-    // Step 2: Reconstruct DEK from shards
     const rawDek = await combineShards(shards);
-    // Step 3: Decrypt data, verifying the metadata AAD binding (F8). Any tamper
-    // with the metadata block makes this AES-GCM decrypt fail.
     const keyHandle = await _importRawKey(rawDek);
     const plaintext = await decryptChunk(keyHandle, {
         ciphertext: pkg.encryptedData.ciphertext,
         iv: pkg.encryptedData.iv,
         tag: pkg.encryptedData.tag,
     }, dataAAD(pkg.metadata));
-    // Step 4: Best-effort erase DEK from memory
     rawDek.fill(0);
     return plaintext;
+}
+export async function recover(pkg, custodianPrivateKeys, ownerVerifyKey, options) {
+    const kem = options?.kem ?? HYBRID_X25519_MLKEM768;
+    if (custodianPrivateKeys.length < pkg.metadata.threshold) {
+        throw new InvalidInputError(`need at least ${String(pkg.metadata.threshold)} custodian private keys, got ${String(custodianPrivateKeys.length)}`);
+    }
+    const shards = [];
+    for (const { index, privateKey } of custodianPrivateKeys) {
+        shards.push(await recoverShardAt(pkg, index, privateKey, ownerVerifyKey, { kem }));
+    }
+    return openPreserved(pkg, shards, { kem });
 }
 //# sourceMappingURL=pipeline.js.map

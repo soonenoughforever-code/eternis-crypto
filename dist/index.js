@@ -15,7 +15,7 @@ export { generateMasterKeyPair, wrapKey, unwrapKey } from './key-wrap.js';
 export { splitKey, combineShards } from './sss/key-split.js';
 export { generateSigningKeyPair, sign, verify } from './sig/ml-dsa.js';
 export { distributeShard, recoverShard } from './sss/shard-encrypt.js';
-export { preserve, recover } from './pipeline.js';
+export { preserve, recover, recoverShardAt, openPreserved } from './pipeline.js';
 // Shared errors
 export { EternisCryptoError, AuthenticationError, KeyExhaustedError, InvalidInputError, DecapsulationError, KeyWrappingError, ShardAuthenticationError, SignatureVerificationError, } from './errors.js';
 //# sourceMappingURL=index.js.map
