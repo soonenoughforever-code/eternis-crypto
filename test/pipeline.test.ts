@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { preserve, recover, _drawInFieldSecret } from '../src/pipeline.js';
+import { preserve, recover, _drawInFieldSecret, recoverShardAt, openPreserved } from '../src/pipeline.js';
 import { generateSigningKeyPair } from '../src/sig/ml-dsa.js';
 import { HYBRID_X25519_MLKEM768 } from '../src/kem/hybrid-kem.js';
 import type { PreservationPackage } from '../src/types.js';
@@ -413,5 +413,32 @@ describe('input validation', () => {
         { index: 1, privateKey: custodians[1]!.privateKey },
       ], wrongSigKp.publicKey),
     ).rejects.toThrow();
+  });
+});
+
+describe('decomposed recovery API (v0.6.1)', () => {
+  it('recoverShardAt decrypts a single shard with the correct per-slot binding', async () => {
+    const data = new TextEncoder().encode('master key material for decomposed recovery');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(5);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 3,
+    });
+    const shard = await recoverShardAt(pkg, 2, custodians[2]!.privateKey, sigKp.publicKey);
+    expect(shard.index).toBe(3);          // slot 2 -> Shamir index 3
+    expect(shard.value.length).toBe(32);
+    expect(shard.mac.length).toBe(32);
+  });
+
+  it('recoverShardAt throws for an out-of-range slot', async () => {
+    const data = new TextEncoder().encode('x');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(5);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 3,
+    });
+    await expect(
+      recoverShardAt(pkg, 9, custodians[0]!.privateKey, sigKp.publicKey),
+    ).rejects.toThrow(InvalidInputError);
   });
 });

@@ -9,7 +9,7 @@
  */
 
 import type { Kem } from './kem/kem.js';
-import type { PreservationPackage, EncryptedShard } from './types.js';
+import type { PreservationPackage, EncryptedShard, Shard } from './types.js';
 import { HYBRID_X25519_MLKEM768 } from './kem/hybrid-kem.js';
 import { _importRawKey } from './keys.js';
 import { encryptChunk, decryptChunk } from './aes-gcm.js';
@@ -201,6 +201,29 @@ export async function preserve(
  *   array passed to preserve()), NOT the 1-based Shamir point index. Each
  *   `privateKey` must be the private key of the custodian at that slot.
  */
+/**
+ * Decrypt and verify a single preserved shard by its slot, rebuilding the same
+ * per-slot HPKE info that preserve() bound (F6). Building block for recovery
+ * that is performed across more than one location (e.g. server + client).
+ */
+export async function recoverShardAt(
+  pkg: PreservationPackage,
+  slotIndex: number,
+  custodianPrivateKey: Uint8Array,
+  ownerVerifyKey: Uint8Array,
+  options?: { kem?: Kem },
+): Promise<Shard> {
+  const kem = options?.kem ?? HYBRID_X25519_MLKEM768;
+  const encryptedShard = pkg.encryptedShards[slotIndex];
+  if (!encryptedShard) {
+    throw new InvalidInputError(`no encrypted shard at slot ${String(slotIndex)}`);
+  }
+  return recoverShard(encryptedShard, custodianPrivateKey, ownerVerifyKey, {
+    kem,
+    info: shardInfo(pkg.metadata, slotIndex),
+  });
+}
+
 export async function recover(
   pkg: PreservationPackage,
   custodianPrivateKeys: { index: number; privateKey: Uint8Array }[],
