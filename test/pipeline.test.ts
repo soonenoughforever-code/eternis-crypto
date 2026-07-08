@@ -441,4 +441,44 @@ describe('decomposed recovery API (v0.6.1)', () => {
       recoverShardAt(pkg, 9, custodians[0]!.privateKey, sigKp.publicKey),
     ).rejects.toThrow(InvalidInputError);
   });
+
+  it('openPreserved reconstructs the data from any 3 recovered shards', async () => {
+    const data = new TextEncoder().encode('decomposed-recovery round trip payload');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(5);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 3,
+    });
+    // mixed subset: slots 1, 2, 3
+    const shards = await Promise.all(
+      [1, 2, 3].map((slot) => recoverShardAt(pkg, slot, custodians[slot]!.privateKey, sigKp.publicKey)),
+    );
+    const recovered = await openPreserved(pkg, shards);
+    expect(recovered).toEqual(data);
+  });
+
+  it('openPreserved rejects fewer than threshold shards', async () => {
+    const data = new TextEncoder().encode('threshold guard');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(5);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 3,
+    });
+    const two = await Promise.all(
+      [0, 1].map((slot) => recoverShardAt(pkg, slot, custodians[slot]!.privateKey, sigKp.publicKey)),
+    );
+    await expect(openPreserved(pkg, two)).rejects.toThrow(InvalidInputError);
+  });
+
+  it('openPreserved rejects duplicate Shamir indexes', async () => {
+    const data = new TextEncoder().encode('dup guard');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(5);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 3,
+    });
+    const s0 = await recoverShardAt(pkg, 0, custodians[0]!.privateKey, sigKp.publicKey);
+    const s1 = await recoverShardAt(pkg, 1, custodians[1]!.privateKey, sigKp.publicKey);
+    await expect(openPreserved(pkg, [s0, s1, s0])).rejects.toThrow(InvalidInputError);
+  });
 });

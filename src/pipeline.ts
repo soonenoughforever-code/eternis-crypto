@@ -224,6 +224,40 @@ export async function recoverShardAt(
   });
 }
 
+/**
+ * Combine a threshold-sized set of recovered shards and decrypt the preserved
+ * data, verifying the metadata AAD binding (F8). Enforces the package threshold
+ * and unique Shamir indexes before combining.
+ */
+export async function openPreserved(
+  pkg: PreservationPackage,
+  shards: readonly Shard[],
+  _options?: { kem?: Kem },
+): Promise<Uint8Array> {
+  const threshold = pkg.metadata.threshold;
+  if (shards.length < threshold) {
+    throw new InvalidInputError(
+      `need at least ${String(threshold)} shards, got ${String(shards.length)}`,
+    );
+  }
+  const seen = new Set<number>();
+  for (const s of shards) {
+    if (seen.has(s.index)) {
+      throw new InvalidInputError(`duplicate shard index: ${String(s.index)}`);
+    }
+    seen.add(s.index);
+  }
+  const rawDek = await combineShards(shards);
+  const keyHandle = await _importRawKey(rawDek);
+  const plaintext = await decryptChunk(keyHandle, {
+    ciphertext: pkg.encryptedData.ciphertext,
+    iv: pkg.encryptedData.iv,
+    tag: pkg.encryptedData.tag,
+  }, dataAAD(pkg.metadata));
+  rawDek.fill(0);
+  return plaintext;
+}
+
 export async function recover(
   pkg: PreservationPackage,
   custodianPrivateKeys: { index: number; privateKey: Uint8Array }[],
