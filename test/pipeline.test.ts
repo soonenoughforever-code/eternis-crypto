@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { preserve, recover } from '../src/pipeline.js';
+import { preserve, recover, _drawInFieldSecret } from '../src/pipeline.js';
 import { generateSigningKeyPair } from '../src/sig/ml-dsa.js';
 import { HYBRID_X25519_MLKEM768 } from '../src/kem/hybrid-kem.js';
 import type { PreservationPackage } from '../src/types.js';
-import { InvalidInputError } from '../src/errors.js';
+import { AuthenticationError, InvalidInputError } from '../src/errors.js';
+import { P, bytesToBigInt, bigIntToBytes } from '../src/sss/field.js';
 
 async function generateCustodianKeyPairs(count: number) {
   const pairs = [];
@@ -13,6 +14,29 @@ async function generateCustodianKeyPairs(count: number) {
   }
   return pairs;
 }
+
+describe('DEK field-range sampling (F3)', () => {
+  it('_drawInFieldSecret rejection-samples until the value is in [0, P)', () => {
+    const outOfField = bigIntToBytes(P); // value == P -> must be rejected
+    const inField = bigIntToBytes(P - 1n); // value == P-1 -> accepted
+    const queue = [outOfField, inField];
+    let calls = 0;
+    const draw = (_n: number): Uint8Array => {
+      calls++;
+      return queue.shift()!;
+    };
+    const result = _drawInFieldSecret(draw);
+    expect(calls).toBe(2); // redrew exactly once
+    expect(bytesToBigInt(result) < P).toBe(true);
+    expect(Array.from(result)).toEqual(Array.from(inField));
+  });
+
+  it('_drawInFieldSecret returns an in-field value from the real CSPRNG', () => {
+    const result = _drawInFieldSecret();
+    expect(result.length).toBe(32);
+    expect(bytesToBigInt(result) < P).toBe(true);
+  });
+});
 
 describe('preservation pipeline', () => {
   it('round-trips: preserve then recover returns original data', async () => {
@@ -114,11 +138,13 @@ describe('preservation pipeline', () => {
 
     const pkg = await preserve(data, custodianPublicKeys, sigKp.secretKey);
 
-    expect(pkg.metadata.version).toBe('0.5.0');
+    expect(pkg.metadata.version).toBe('0.6.0');
     expect(pkg.metadata.threshold).toBe(3);
     expect(pkg.metadata.totalShards).toBe(5);
     expect(pkg.metadata.kemId).toBe('Hybrid-X25519-MLKEM768');
     expect(pkg.metadata.sigAlgorithmId).toBe('ML-DSA-65');
+    // F6/F8: a random per-package id must be present (32 lowercase-hex chars = 16 bytes)
+    expect(pkg.metadata.packageId).toMatch(/^[0-9a-f]{32}$/);
     expect(pkg.encryptedShards).toHaveLength(5);
   });
 
@@ -216,6 +242,76 @@ describe('tampering detection', () => {
     await expect(
       recover(tamperedPkg, custodianPrivateKeys, sigKp.publicKey),
     ).rejects.toThrow();
+  });
+});
+
+describe('shard + metadata binding (F6/F8)', () => {
+  // F8: metadata is authenticated by binding it into the data AEAD's AAD, so
+  // editing any metadata field is detected on recover instead of trusted.
+  it('detects tampered metadata.version (AAD binding of the data ciphertext)', async () => {
+    const data = new TextEncoder().encode('metadata-binding test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 2,
+    });
+    const keys = [
+      { index: 0, privateKey: custodians[0]!.privateKey },
+      { index: 1, privateKey: custodians[1]!.privateKey },
+    ];
+    const tampered: PreservationPackage = {
+      ...pkg,
+      metadata: { ...pkg.metadata, version: '9.9.9' },
+    };
+    await expect(recover(tampered, keys, sigKp.publicKey)).rejects.toThrow(AuthenticationError);
+  });
+
+  it('detects tampered metadata.packageId (shard info + AAD binding)', async () => {
+    const data = new TextEncoder().encode('packageId-binding test');
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const pkg = await preserve(data, custodians.map((c) => c.publicKey), sigKp.secretKey, {
+      threshold: 2,
+    });
+    const keys = [
+      { index: 0, privateKey: custodians[0]!.privateKey },
+      { index: 1, privateKey: custodians[1]!.privateKey },
+    ];
+    // flip one hex nibble of the package id
+    const pid = pkg.metadata.packageId;
+    const flipped = (pid[0] === '0' ? '1' : '0') + pid.slice(1);
+    const tampered: PreservationPackage = {
+      ...pkg,
+      metadata: { ...pkg.metadata, packageId: flipped },
+    };
+    await expect(recover(tampered, keys, sigKp.publicKey)).rejects.toThrow(AuthenticationError);
+  });
+
+  // F6: a shard is bound (via HPKE info) to its package + slot, so a validly
+  // signed shard replayed from ANOTHER package to the SAME custodian is rejected
+  // EARLY at HPKE decryption (AuthenticationError), not late at the HMAC.
+  it('rejects a cross-package shard replay early (HPKE bind, not late HMAC)', async () => {
+    const sigKp = generateSigningKeyPair();
+    const custodians = await generateCustodianKeyPairs(3);
+    const pubs = custodians.map((c) => c.publicKey);
+
+    const pkgA = await preserve(new TextEncoder().encode('package A'), pubs, sigKp.secretKey, {
+      threshold: 2,
+    });
+    const pkgB = await preserve(new TextEncoder().encode('package B'), pubs, sigKp.secretKey, {
+      threshold: 2,
+    });
+
+    // Splice package B's slot-0 shard (sealed to the same custodian 0) into A.
+    const spliced: PreservationPackage = {
+      ...pkgA,
+      encryptedShards: [pkgB.encryptedShards[0]!, ...pkgA.encryptedShards.slice(1)],
+    };
+    const keys = [
+      { index: 0, privateKey: custodians[0]!.privateKey },
+      { index: 1, privateKey: custodians[1]!.privateKey },
+    ];
+    await expect(recover(spliced, keys, sigKp.publicKey)).rejects.toThrow(AuthenticationError);
   });
 });
 

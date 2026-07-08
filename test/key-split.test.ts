@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { splitKey, combineShards } from '../src/sss/key-split.js';
 import { InvalidInputError, ShardAuthenticationError } from '../src/errors.js';
 import type { Shard } from '../src/types.js';
+import { P, bigIntToBytes } from '../src/sss/field.js';
 
 describe('splitKey + combineShards round-trip', () => {
   it('(3,5) round-trip', async () => {
@@ -131,6 +132,26 @@ describe('splitKey validation', () => {
     await expect(splitKey(new Uint8Array(32), { threshold: 2, shares: 3 })).rejects.toThrow(
       InvalidInputError,
     );
+  });
+
+  // F3: a 32-byte secret whose big-endian value is >= P (2^256-189) would be
+  // silently reduced mod P by generateShares and reconstruct to a DIFFERENT
+  // value, corrupting recovery. splitKey must reject out-of-field secrets.
+  it('secret >= P (2^256-1, all 0xFF) throws InvalidInputError', async () => {
+    const allFF = new Uint8Array(32).fill(0xff); // value = 2^256 - 1 >= P
+    await expect(splitKey(allFF, { threshold: 2, shares: 3 })).rejects.toThrow(InvalidInputError);
+  });
+
+  it('secret exactly == P throws InvalidInputError (boundary)', async () => {
+    const atP = bigIntToBytes(P); // value = P, not in [0, P)
+    await expect(splitKey(atP, { threshold: 2, shares: 3 })).rejects.toThrow(InvalidInputError);
+  });
+
+  it('secret == P-1 (largest in-field value) is accepted and round-trips', async () => {
+    const belowP = bigIntToBytes(P - 1n); // value = P-1, the largest valid element
+    const result = await splitKey(belowP, { threshold: 2, shares: 3 });
+    const recovered = await combineShards(result.shards.slice(0, 2));
+    expect(Array.from(recovered)).toEqual(Array.from(belowP));
   });
 
   it('threshold < 2 throws InvalidInputError', async () => {

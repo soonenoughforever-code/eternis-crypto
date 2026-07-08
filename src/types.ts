@@ -103,5 +103,12 @@ export interface PreservationPackage {
     readonly totalShards: number;
     readonly kemId: string;
     readonly sigAlgorithmId: string;
+    /**
+     * Random per-package identifier (hex). Binds every shard to this package
+     * (via HPKE `info`) and is authenticated together with the rest of the
+     * metadata by the data ciphertext's AAD. Tampering with any metadata field
+     * is therefore detected on recover().
+     */
+    readonly packageId: string;
   };
 }

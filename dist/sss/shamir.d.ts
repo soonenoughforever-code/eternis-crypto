@@ -2,6 +2,12 @@
  * Shamir Secret Sharing — polynomial split and Lagrange reconstruction.
  * Operates over GF(p) where p = 2^256 - 189.
  *
+ * SECURITY - NOT CONSTANT TIME (finding F2, open): reconstructSecret and
+ * evaluatePolynomial multiply/accumulate SECRET values (share y-coordinates,
+ * the secret polynomial coefficient, and the running DEK) using the variable-
+ * time BigInt arithmetic in ./field.ts. Run these only in a trusted execution
+ * context; see field.ts for the full note and deferred constant-time plan.
+ *
  * Reference: Shamir (1979) "How to Share a Secret"
  */
 /** A raw share: index (x-coordinate) and value (y-coordinate as bytes). */
