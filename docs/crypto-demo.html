@@ -6,22 +6,22 @@
 <title>Eternis — Genomic Data Protection</title>
 <style>
   :root {
-    --bg: #0a0e17;
-    --surface: #131a2b;
-    --border: #1e2a42;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --accent: #3b82f6;
-    --accent-glow: rgba(59, 130, 246, 0.3);
-    --green: #22c55e;
-    --green-glow: rgba(34, 197, 94, 0.25);
-    --amber: #f59e0b;
-    --amber-glow: rgba(245, 158, 11, 0.25);
-    --purple: #a855f7;
-    --purple-glow: rgba(168, 85, 247, 0.25);
-    --red: #ef4444;
-    --cyan: #06b6d4;
-    --cyan-glow: rgba(6, 182, 212, 0.25);
+    --bg: #0F1729;
+    --surface: #16223B;
+    --border: #2A3B5F;
+    --text: #FDFCFA;
+    --muted: #93A0B8;
+    --accent: #E0A85F;
+    --accent-glow: rgba(224, 168, 95, 0.30);
+    --green: #5FA36B;
+    --green-glow: rgba(95, 163, 107, 0.25);
+    --amber: #E8C15C;
+    --amber-glow: rgba(232, 193, 92, 0.25);
+    --purple: #9B8AC4;
+    --purple-glow: rgba(155, 138, 196, 0.25);
+    --red: #CE6F62;
+    --cyan: #6FA8B8;
+    --cyan-glow: rgba(111, 168, 184, 0.25);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,11 +44,11 @@
     font-weight: 700;
     letter-spacing: 0.15em;
     margin-bottom: 8px;
-    color: #fff;
+    color: #FDFCFA;
   }
   .brand-accent {
-    color: #00c2cc;
-    text-shadow: 0 0 40px rgba(0, 194, 204, 0.5);
+    color: #D4943A;
+    text-shadow: 0 0 40px rgba(212, 148, 58, 0.5);
   }
   .brand-sub {
     font-weight: 300;
@@ -233,10 +233,10 @@
     height: 40px;
     background: linear-gradient(transparent, var(--surface));
   }
-  .dna-sequence .base-A { color: #22c55e; }
-  .dna-sequence .base-T { color: #3b82f6; }
-  .dna-sequence .base-G { color: #f59e0b; }
-  .dna-sequence .base-C { color: #ef4444; }
+  .dna-sequence .base-A { color: #5FA36B; }
+  .dna-sequence .base-T { color: #E0A85F; }
+  .dna-sequence .base-G { color: #E8C15C; }
+  .dna-sequence .base-C { color: #CE6F62; }
 
   /* Cipher text */
   .cipher-text {
@@ -281,7 +281,7 @@
     padding: 4px 12px;
     border: 1px solid var(--accent);
     border-radius: 20px;
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(224, 168, 95, 0.1);
   }
 
   /* Key display */
@@ -413,11 +413,11 @@
   }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
   .btn.primary {
-    background: linear-gradient(135deg, #00c2cc, #0077aa);
-    border-color: #00c2cc;
+    background: linear-gradient(135deg, #D4943A, #96631F);
+    border-color: #D4943A;
     color: white;
   }
-  .btn.primary:hover { background: linear-gradient(135deg, #00d4de, #0088bb); }
+  .btn.primary:hover { background: linear-gradient(135deg, #E0A85F, #A87330); }
   .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   /* Encryption animation */
@@ -431,7 +431,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.15) 40%, rgba(59,130,246,0.3) 50%, rgba(59,130,246,0.15) 60%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(224, 168, 95,0.15) 40%, rgba(224, 168, 95,0.3) 50%, rgba(224, 168, 95,0.15) 60%, transparent 100%);
     pointer-events: none;
   }
   .encrypt-sweep.animating {
@@ -593,15 +593,15 @@
   }
   .proof-input:focus {
     outline: none;
-    border-color: #00c2cc;
-    box-shadow: 0 0 12px rgba(0,194,204,0.2);
+    border-color: #D4943A;
+    box-shadow: 0 0 12px rgba(212, 148, 58,0.2);
   }
   .proof-input::placeholder { color: var(--muted); }
   .proof-btn {
     padding: 10px 24px;
     border-radius: 8px;
-    border: 1px solid #00c2cc;
-    background: linear-gradient(135deg, #00c2cc, #0077aa);
+    border: 1px solid #D4943A;
+    background: linear-gradient(135deg, #D4943A, #96631F);
     color: white;
     font-size: 0.85rem;
     cursor: pointer;
@@ -614,9 +614,9 @@
   .proof-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .proof-btn.secondary {
     background: transparent;
-    color: #00c2cc;
+    color: #D4943A;
   }
-  .proof-btn.secondary:hover { background: rgba(0,194,204,0.1); }
+  .proof-btn.secondary:hover { background: rgba(212, 148, 58,0.1); }
   .proof-output {
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.75rem;
@@ -668,10 +668,10 @@
     font-family: inherit;
   }
   .shard-toggle-btn.selected {
-    border-color: #00c2cc;
-    color: #00c2cc;
-    background: rgba(0,194,204,0.1);
-    box-shadow: 0 0 12px rgba(0,194,204,0.2);
+    border-color: #D4943A;
+    color: #D4943A;
+    background: rgba(212, 148, 58,0.1);
+    box-shadow: 0 0 12px rgba(212, 148, 58,0.2);
   }
   .shard-toggle-btn:hover { border-color: var(--muted); }
   .proof-result {
@@ -682,11 +682,11 @@
   }
   .proof-result.success {
     border: 1px solid var(--green);
-    background: rgba(34,197,94,0.05);
+    background: rgba(95, 163, 107,0.05);
   }
   .proof-result.failure {
     border: 1px solid var(--red);
-    background: rgba(239,68,68,0.05);
+    background: rgba(206, 111, 98,0.05);
   }
   .proof-result .big-icon { font-size: 2rem; margin-bottom: 8px; }
   .proof-result .result-text { font-size: 0.9rem; font-weight: 500; }
@@ -709,11 +709,11 @@
     letter-spacing: 0.2em;
   }
   .tagline-gray {
-    color: #8892a4;
+    color: #93A0B8;
   }
   .tagline-teal {
-    color: #00c2cc;
-    text-shadow: 0 0 60px rgba(0, 194, 204, 0.6);
+    color: #D4943A;
+    text-shadow: 0 0 60px rgba(212, 148, 58, 0.6);
   }
 </style>
 </head>
@@ -1123,7 +1123,7 @@
     </div>
 
     <!-- Secure context warning -->
-    <div id="secureContextWarning" style="display:none;background:rgba(239,68,68,0.1);border:1px solid var(--red);border-radius:8px;padding:16px;margin-bottom:16px;font-size:0.8rem">
+    <div id="secureContextWarning" style="display:none;background:rgba(206, 111, 98,0.1);border:1px solid var(--red);border-radius:8px;padding:16px;margin-bottom:16px;font-size:0.8rem">
       <strong style="color:var(--red)">Secure context required.</strong>
       <span style="color:var(--muted)">Web Crypto API needs HTTPS or localhost. Open a terminal in this folder and run:</span>
       <code style="display:block;background:var(--surface);padding:8px;border-radius:4px;margin-top:8px;color:var(--amber)">npx serve .</code>
@@ -1167,8 +1167,8 @@
 
     <!-- Step 4: Recovery -->
     <div class="proof-step" id="proofStep4">
-      <div class="data-panel" style="border-color:#00c2cc;box-shadow:0 0 24px rgba(0,194,204,0.2)">
-        <div class="proof-step-label" style="color:#00c2cc">Step 4 — Select exactly 3 shards to recover the key</div>
+      <div class="data-panel" style="border-color:#D4943A;box-shadow:0 0 24px rgba(212, 148, 58,0.2)">
+        <div class="proof-step-label" style="color:#D4943A">Step 4 — Select exactly 3 shards to recover the key</div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">Pick any 3 of the 5 shards. The key will be mathematically reconstructed. Try different combinations — they all work.</div>
         <div class="shard-toggle" id="shardToggles"></div>
         <div style="display:flex;gap:8px;margin-top:8px">
@@ -1472,7 +1472,7 @@
   // ---- Main proof flow ----
 
   const labels = ['Member', 'Beneficiary 1', 'Beneficiary 2', 'Escrow', 'Eternis'];
-  const colors = ['#22c55e', '#a855f7', '#06b6d4', '#f59e0b', '#3b82f6'];
+  const colors = ['#5FA36B', '#9B8AC4', '#6FA8B8', '#E8C15C', '#E0A85F'];
 
   async function runProof() {
     const input = document.getElementById('proofInput').value.trim();
