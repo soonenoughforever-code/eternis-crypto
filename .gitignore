@@ -7,3 +7,5 @@ coverage/
 .vscode/
 .env
 .env.*
+
+.vercel
